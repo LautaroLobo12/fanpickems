@@ -9,8 +9,7 @@ service cloud.firestore {
     
     // Users collection - users can only read/write their own data
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-      allow create: if request.auth != null && request.auth.uid == userId;
+      allow read, write, create: if request.auth != null && request.auth.uid == userId;
     }
     
     // Teams collection - read-only for authenticated users, admin-only writes
@@ -24,16 +23,22 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow write, create, delete: if isAdmin();
       
-      // Tournament picks subcollection - users can read/write their own picks only
+      // Tournament picks subcollection - users can read all picks
       match /picks/{userId} {
-        allow read: if request.auth != null && request.auth.uid == userId;
+        allow read: if request.auth != null;
         allow write, create: if request.auth != null 
           && request.auth.uid == userId
-          && validatePicksData(request.resource);
+          && validatePicksData(request.resource, tournamentId);
         allow delete: if false; // Prevent pick deletion
       }
     }
     
+    // Public User Profiles - publicly readable, user can update their own public profile
+    match /publicUserProfiles/{userId} {
+      allow read: if request.auth != null;
+      allow write, create: if request.auth != null && request.auth.uid == userId;
+    }
+
     // Deny all other collections/documents
     match /{document=**} {
       allow read, write: if false;
@@ -43,47 +48,34 @@ service cloud.firestore {
     function getTournament(tournamentId) {
       return get(/databases/$(database)/documents/tournaments/$(tournamentId));
     }
-    
-    // Function to validate picks data structure and deadlines
-    function validatePicksData(newData) {
-      let data = newData.data;
-      let tournamentId = request.resource.__name__[1]; // Extract tournamentId from path /tournaments/{tournamentId}/picks/{userId}
-      let tournament = getTournament(tournamentId).data;
 
-      // Basic structure validation
-      let isValidStructure = data.keys().hasAll(['uid', 'picks', 'totalPoints', 'lastUpdated'])
+    // Helper function for basic structure validation
+    function _isValidStructure(data, auth) {
+      return data.keys().hasAll(['uid', 'picks', 'totalPoints', 'lastUpdated'])
         && data.uid is string
         && data.picks is map
         && data.totalPoints is number
         && data.lastUpdated is timestamp
-        && data.uid == request.auth.uid;
+        && data.uid == auth.uid;
+    }
 
-      if (!isValidStructure) {
-        return false;
-      }
+    // Helper function to check deadline for a specific stage
+    function _isStageDeadlineValid(picks, stageName, tournamentStages, requestTime) {
+      return !(picks[stageName] is list && picks[stageName].size() > 0) || (tournamentStages[stageName] != null && requestTime < tournamentStages[stageName].deadline);
+    }
+    
+    // Helper function to check deadline for finals (string)
+    function _isFinalsDeadlineValid(picks, tournamentStages, requestTime) {
+      return !(picks.finals is string && picks.finals.size() > 0) || (tournamentStages.finals != null && requestTime < tournamentStages.finals.deadline);
+    }
 
-      // Check deadlines for each stage in the submitted picks
-      let allDeadlinesValid = true;
-      let submittedPicks = data.picks;
-
-      // Check playoffs picks
-      if (submittedPicks.playoffs is list && submittedPicks.playoffs.size() > 0) {
-        allDeadlinesValid = allDeadlinesValid && request.time < tournament.stages.playoffs.deadline;
-      }
-      // Check playins picks
-      if (submittedPicks.playins is list && submittedPicks.playins.size() > 0) {
-        allDeadlinesValid = allDeadlinesValid && request.time < tournament.stages.playins.deadline;
-      }
-      // Check semifinals picks
-      if (submittedPicks.semifinals is list && submittedPicks.semifinals.size() > 0) {
-        allDeadlinesValid = allDeadlinesValid && request.time < tournament.stages.semifinals.deadline;
-      }
-      // Check finals pick (it's a string, not a list)
-      if (submittedPicks.finals is string && submittedPicks.finals.size() > 0) {
-        allDeadlinesValid = allDeadlinesValid && request.time < tournament.stages.finals.deadline;
-      }
-
-      return isValidStructure && allDeadlinesValid;
+    // Main validation function
+    function validatePicksData(newData, tournamentId) {
+      return _isValidStructure(newData.data, request.auth)
+        && _isStageDeadlineValid(newData.data.picks, 'playoffs', getTournament(tournamentId).data.stages, request.time)
+        && _isStageDeadlineValid(newData.data.picks, 'playins', getTournament(tournamentId).data.stages, request.time)
+        && _isStageDeadlineValid(newData.data.picks, 'semifinals', getTournament(tournamentId).data.stages, request.time)
+        && _isFinalsDeadlineValid(newData.data.picks, getTournament(tournamentId).data.stages, request.time);
     }
   }
 }

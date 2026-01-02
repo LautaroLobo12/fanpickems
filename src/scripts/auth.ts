@@ -102,16 +102,20 @@ export const isAuthenticated = (): boolean => {
 const createOrUpdateUser = async (user: FirebaseUser): Promise<void> => {
   try {
     const userRef = doc(db, 'users', user.uid);
+    const publicUserRef = doc(db, 'publicUserProfiles', user.uid);
     const userDoc = await getDoc(userRef);
 
+    let createdAt;
+
     if (!userDoc.exists()) {
+      createdAt = serverTimestamp();
       // Create new user document
       await setDoc(userRef, {
         uid: user.uid,
         email: user.email,
         displayName: user.displayName || user.email,
         photoURL: user.photoURL || null,
-        createdAt: serverTimestamp()
+        createdAt
       });
     } else {
       // Update existing user document with latest info
@@ -120,7 +124,17 @@ const createOrUpdateUser = async (user: FirebaseUser): Promise<void> => {
         displayName: user.displayName || user.email,
         photoURL: user.photoURL || null
       }, { merge: true });
+
+      createdAt = userDoc.data()?.createdAt || serverTimestamp();
     }
+
+    // Always update public profile (excluding email for privacy)
+    await setDoc(publicUserRef, {
+      uid: user.uid,
+      displayName: user.displayName || 'Unknown User',
+      createdAt
+    }, { merge: true });
+
   } catch (error) {
     console.error('Error creating/updating user:', error);
   }

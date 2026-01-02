@@ -20,9 +20,18 @@ import { db } from './firebase';
 // Users Collection Operations
 export const createUser = async (uid: string, email: string, displayName: string): Promise<void> => {
   const userRef = doc(db, 'users', uid);
+  const publicUserRef = doc(db, 'publicUserProfiles', uid); // New: reference to public profile
+
   await setDoc(userRef, {
     uid,
     email,
+    displayName,
+    createdAt: serverTimestamp()
+  });
+
+  // New: Create public user profile
+  await setDoc(publicUserRef, {
+    uid,
     displayName,
     createdAt: serverTimestamp()
   });
@@ -32,6 +41,13 @@ export const getUser = async (uid: string): Promise<User | null> => {
   const userRef = doc(db, 'users', uid);
   const userSnap: DocumentSnapshot<DocumentData> = await getDoc(userRef);
   return userSnap.exists() ? userSnap.data() as User : null;
+};
+
+// New: Public User Profile Operations
+export const getPublicUserProfile = async (uid: string): Promise<{ uid: string; displayName: string; createdAt: any } | null> => {
+  const publicUserRef = doc(db, 'publicUserProfiles', uid);
+  const publicUserSnap: DocumentSnapshot<DocumentData> = await getDoc(publicUserRef);
+  return publicUserSnap.exists() ? publicUserSnap.data() as { uid: string; displayName: string; createdAt: any } : null;
 };
 
 // Tournaments Collection Operations
@@ -105,13 +121,13 @@ export const getTournamentLeaderboard = async (
   const leaderboard: LeaderboardEntry[] = [];
   for (const docSnap of querySnapshot.docs) {
     const pickData = docSnap.data() as UserPicks;
-    // Get user info for display name
-    const userData = await getUser(pickData.uid);
+    // Get public user info for display name
+    const publicUserData = await getPublicUserProfile(pickData.uid);
     leaderboard.push({
       uid: pickData.uid,
-      displayName: userData?.displayName || 'Unknown User',
+      displayName: publicUserData?.displayName || 'Unknown User',
       totalPoints: pickData.totalPoints,
-      createdAt: userData?.createdAt
+      createdAt: publicUserData?.createdAt // Use createdAt from public profile for leaderboard entry
     });
   }
 
