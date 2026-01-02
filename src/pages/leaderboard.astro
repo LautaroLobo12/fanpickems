@@ -1,0 +1,64 @@
+---
+// Leaderboard page
+import AuthGuard from '../components/AuthGuard.astro';
+import LeaderboardComponent from '../components/Leaderboard.astro';
+import Navigation from '../components/Navigation.astro';
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="LCK Pickems - Leaderboard">
+  <AuthGuard>
+    <Navigation />
+    <div class="leaderboard-page">
+      <div class="leaderboard-container">
+        <div class="page-header">
+          <h1>Leaderboard</h1>
+          <p class="page-description">Top tournament predictors</p>
+        </div>
+        
+        <LeaderboardComponent />
+      </div>
+    </div>
+  </AuthGuard>
+</Layout>
+
+<style>
+  .leaderboard-page {
+    min-height: calc(100vh - 80px);
+    background: #f8f9fa;
+  }
+  
+  .leaderboard-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+  
+  .page-header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  
+  .page-header h1 {
+    color: #333;
+    margin-bottom: 0.5rem;
+    font-size: 2.5rem;
+    font-weight: 700;
+  }
+  
+  .page-description {
+    color: #666;
+    font-size: 1.125rem;
+    margin: 0;
+  }
+  
+  @media (max-width: 768px) {
+    .leaderboard-container {
+      padding: 1rem;
+    }
+    
+    .page-header h1 {
+      font-size: 2rem;
+    }
+  }
+</style>

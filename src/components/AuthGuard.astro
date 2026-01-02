@@ -1,0 +1,82 @@
+---
+// Authentication wrapper component
+---
+
+<div id="auth-guard">
+  <div id="loading-state" class="loading-container">
+    <div class="spinner"></div>
+    <p>Loading...</p>
+  </div>
+  
+  <div id="authenticated-content" style="display: none;">
+    <slot />
+  </div>
+</div>
+
+<script>
+  import { onAuthStateChange, waitForAuth } from '../scripts/auth.js';
+  
+  const loadingState = document.getElementById('loading-state') as HTMLDivElement;
+  const authenticatedContent = document.getElementById('authenticated-content') as HTMLDivElement;
+  
+  if (loadingState && authenticatedContent) {
+    // Wait for auth to initialize
+    waitForAuth().then((user) => {
+      if (user) {
+        // User is authenticated, show content
+        loadingState.style.display = 'none';
+        authenticatedContent.style.display = 'block';
+      } else {
+        // User is not authenticated, redirect to login
+        window.location.href = '/';
+      }
+    });
+    
+    // Also listen for auth state changes
+    const unsubscribe = onAuthStateChange((user: any) => {
+      if (user) {
+        // User is authenticated, show content
+        loadingState.style.display = 'none';
+        authenticatedContent.style.display = 'block';
+      } else {
+        // User is not authenticated, redirect to login
+        window.location.href = '/';
+      }
+    });
+    
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+      unsubscribe();
+    });
+  }
+</script>
+
+<style>
+  .loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    gap: 1rem;
+  }
+  
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  .loading-container p {
+    color: #666;
+    margin: 0;
+  }
+</style>

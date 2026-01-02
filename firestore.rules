@@ -1,0 +1,54 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == 'lokolauti9@gmail.com';
+    }
+    
+    // Users collection - users can only read/write their own data
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Teams collection - read-only for authenticated users, admin-only writes
+    match /teams/{teamId} {
+      allow read: if request.auth != null;
+      allow write, create, delete: if isAdmin();
+    }
+    
+    // Tournaments collection - read-only for authenticated users, admin-only writes
+    match /tournaments/{tournamentId} {
+      allow read: if request.auth != null;
+      allow write, create, delete: if isAdmin();
+      
+      // Tournament picks subcollection - users can read/write their own picks only
+      match /picks/{userId} {
+        allow read: if request.auth != null;
+        allow write, create: if request.auth != null 
+          && request.auth.uid == userId
+          && validatePicksData(resource, request.resource);
+        allow delete: if false; // Prevent pick deletion
+      }
+    }
+    
+    // Deny all other collections/documents
+    match /{document=**} {
+      allow read, write: if false;
+    }
+    
+    // Function to validate picks data structure
+    function validatePicksData(existingData, newData) {
+      let data = newData.data;
+      
+      return data.keys().hasAll(['uid', 'picks', 'totalPoints', 'lastUpdated'])
+        && data.uid is string
+        && data.picks is map
+        && data.totalPoints is number
+        && data.lastUpdated is timestamp
+        && data.uid == request.auth.uid;
+    }
+  }
+}

@@ -1,0 +1,294 @@
+---
+// Top 5 users display
+---
+
+<div class="leaderboard-container">
+  <div id="loading" class="loading">
+    <div class="loading-spinner"></div>
+    <p>Loading leaderboard...</p>
+  </div>
+  
+  <div id="leaderboard-content" class="leaderboard-content" style="display: none;">
+    <div class="tournament-info">
+      <h2 id="tournament-name">Tournament Leaderboard</h2>
+    </div>
+    
+    <div class="leaderboard-list" id="leaderboard-list">
+      <!-- Leaderboard entries will be populated here -->
+    </div>
+    
+    <div class="user-position" id="user-position" style="display: none;">
+      <h3>Your Position</h3>
+      <div class="user-rank-info" id="user-rank-info">
+        <!-- User rank info will be populated here -->
+      </div>
+    </div>
+  </div>
+  
+  <div id="error-message" class="error-message" style="display: none;">
+    <h3>Unable to Load Leaderboard</h3>
+    <p>There was a problem loading the leaderboard data.</p>
+    <button onclick="location.reload()">Try Again</button>
+  </div>
+</div>
+
+<script src="../scripts/leaderboard-display.ts"></script>
+
+<style>
+  .leaderboard-container {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  
+  .loading, .error-message {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: #6c757d;
+  }
+  
+  .loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  .error-message {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+    border-radius: 0.5rem;
+  }
+  
+  .error-message button {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    margin-top: 1rem;
+  }
+  
+  .tournament-info {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  
+  .tournament-info h2 {
+    color: #333;
+    margin: 0;
+  }
+  
+  .leaderboard-list {
+    background: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+  }
+  
+  .leaderboard-entry {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid #e9ecef;
+    transition: background-color 0.2s;
+  }
+  
+  .leaderboard-entry:last-child {
+    border-bottom: none;
+  }
+  
+  .leaderboard-entry:hover {
+    background-color: #f8f9fa;
+  }
+  
+  .leaderboard-entry.top-three {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffffff 100%);
+  }
+  
+  .rank {
+    width: 60px;
+    text-align: center;
+  }
+  
+  .medal {
+    font-size: 1.5rem;
+  }
+  
+  .rank-number {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #6c757d;
+  }
+  
+  .user-info {
+    flex: 1;
+    margin-left: 1rem;
+  }
+  
+  .display-name {
+    font-weight: 600;
+    color: #333;
+  }
+  
+  .points {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .points-value {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #007bff;
+  }
+  
+  .points-label {
+    font-size: 0.75rem;
+    color: #6c757d;
+    text-transform: uppercase;
+  }
+  
+  .user-position {
+    margin-top: 2rem;
+    padding: 1rem;
+    background: #e3f2fd;
+    border-radius: 0.5rem;
+    border-left: 4px solid #2196f3;
+  }
+  
+  .user-position h3 {
+    margin: 0 0 0.5rem 0;
+    color: #1976d2;
+  }
+  
+  .user-in-top .congrats {
+    color: #388e3c;
+    font-weight: bold;
+  }
+  
+  .user-rank .rank-text {
+    display: block;
+    font-weight: bold;
+    color: #1976d2;
+    margin-bottom: 0.25rem;
+  }
+  
+  .user-rank .encouragement {
+    color: #666;
+    font-size: 0.9rem;
+  }
+  
+  .no-data {
+    text-align: center;
+    padding: 2rem;
+    color: #6c757d;
+    font-style: italic;
+  }
+  
+  @media (max-width: 768px) {
+    .tournament-info h2 {
+      font-size: 1.5rem;
+    }
+    
+    .leaderboard-entry {
+      padding: 0.75rem;
+    }
+    
+    .rank {
+      width: 50px;
+    }
+    
+    .medal {
+      font-size: 1.25rem;
+    }
+    
+    .rank-number {
+      font-size: 1.1rem;
+    }
+    
+    .user-info {
+      margin-left: 0.75rem;
+    }
+    
+    .display-name {
+      font-size: 0.9rem;
+    }
+    
+    .points-value {
+      font-size: 1.1rem;
+    }
+    
+    .points-label {
+      font-size: 0.7rem;
+    }
+    
+    .user-position {
+      margin-top: 1.5rem;
+      padding: 0.75rem;
+    }
+    
+    .user-position h3 {
+      font-size: 1.1rem;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .leaderboard-container {
+      padding: 0 0.5rem;
+    }
+    
+    .tournament-info h2 {
+      font-size: 1.25rem;
+    }
+    
+    .leaderboard-entry {
+      padding: 0.5rem;
+    }
+    
+    .rank {
+      width: 40px;
+    }
+    
+    .medal {
+      font-size: 1.1rem;
+    }
+    
+    .rank-number {
+      font-size: 1rem;
+    }
+    
+    .user-info {
+      margin-left: 0.5rem;
+    }
+    
+    .display-name {
+      font-size: 0.85rem;
+    }
+    
+    .points-value {
+      font-size: 1rem;
+    }
+    
+    .user-position {
+      padding: 0.5rem;
+    }
+  }
+</style>

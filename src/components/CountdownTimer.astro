@@ -1,0 +1,51 @@
+---
+// Countdown timer component for stage deadlines
+export interface Props {
+  deadline: string | Date;
+  stageName: string;
+}
+
+const { deadline, stageName } = Astro.props;
+const deadlineString = typeof deadline === 'string' ? deadline : deadline.toISOString();
+---
+
+<div class="countdown-timer" data-deadline={deadlineString} data-stage={stageName}>
+  <span class="countdown-text">Loading...</span>
+</div>
+
+<script src="../scripts/countdown.ts"></script>
+
+<style>
+  .countdown-timer {
+    display: inline-block;
+    background: #e9ecef;
+    color: #495057;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    font-family: monospace;
+  }
+  
+  .countdown-timer.warning {
+    background: #fff3cd;
+    color: #856404;
+  }
+  
+  .countdown-timer.urgent {
+    background: #f8d7da;
+    color: #721c24;
+    animation: pulse 1s infinite;
+  }
+  
+  .countdown-timer.expired {
+    background: #6c757d;
+    color: white;
+  }
+  
+  @keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+  }
+</style>
