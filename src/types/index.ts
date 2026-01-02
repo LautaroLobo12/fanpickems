@@ -64,7 +64,7 @@ export interface LeaderboardEntry {
   uid: string;
   displayName: string;
   totalPoints: number;
-  createdAt?: Timestamp;
+  createdAt?: Timestamp; // Submission/Last update time for the picks (used for tie-breaking)
 }
 
 // Points calculation types

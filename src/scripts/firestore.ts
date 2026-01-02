@@ -115,7 +115,12 @@ export const getTournamentLeaderboard = async (
   limitCount: number = 5
 ): Promise<LeaderboardEntry[]> => {
   const picksRef = collection(db, 'tournaments', tournamentId, 'picks');
-  const q = query(picksRef, orderBy('totalPoints', 'desc'), limit(limitCount));
+  const q = query(
+    picksRef,
+    orderBy('totalPoints', 'desc'),
+    orderBy('lastUpdated', 'asc'),
+    limit(limitCount)
+  );
   const querySnapshot: QuerySnapshot<DocumentData> = await getDocs(q);
 
   const leaderboard: LeaderboardEntry[] = [];
@@ -127,7 +132,7 @@ export const getTournamentLeaderboard = async (
       uid: pickData.uid,
       displayName: publicUserData?.displayName || 'Unknown User',
       totalPoints: pickData.totalPoints,
-      createdAt: publicUserData?.createdAt // Use createdAt from public profile for leaderboard entry
+      createdAt: pickData.lastUpdated // Use lastUpdated from picks as the tie-breaking timestamp
     });
   }
 
