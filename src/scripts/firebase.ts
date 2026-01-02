@@ -21,16 +21,5 @@ export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
 // Initialize Cloud Firestore and get a reference to the service
+// Cloud Firestore reference
 export const db = getFirestore(app);
-
-// Connect to emulators in development mode
-if (import.meta.env.DEV) {
-  try {
-    connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
-    connectFirestoreEmulator(db, '127.0.0.1', 8080);
-    console.log('🔧 Using Firebase Emulators (Auth: 9099, Firestore: 8080)');
-  } catch (error) {
-    // Emulator already connected or connection failed
-    console.warn('Emulator connection warning:', error);
-  }
-}
