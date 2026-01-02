@@ -1,8 +1,8 @@
 import { onAuthStateChanged, type User as AuthUser } from 'firebase/auth';
-import { auth } from '../scripts/firebase';
-import { getLeaderboardWithUserPosition } from '../scripts/leaderboard';
-import { getCurrentTournament } from '../scripts/picks';
-import type { LeaderboardEntry, Tournament } from '../types';
+import { auth } from '../../scripts/firebase';
+import { getLeaderboardWithUserPosition } from '../../scripts/services/leaderboard-service';
+import { getCurrentTournament } from '../../scripts/services/picks-service';
+import type { LeaderboardEntry, Tournament } from '../../types';
 
 function initializeLeaderboard() {
   const loading = document.getElementById('loading') as HTMLElement | null;
@@ -38,7 +38,7 @@ function initializeLeaderboard() {
       tournamentName.textContent = `${tournament.name} - Top 5`;
 
       const userId = currentUser?.uid;
-      const result = await getLeaderboardWithUserPosition(tournament.id, userId, 5);
+      const result = await getLeaderboardWithUserPosition(tournament.id, userId ?? '', 5);
 
       displayLeaderboard(result.leaderboard);
 

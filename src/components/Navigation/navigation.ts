@@ -1,5 +1,5 @@
 import { onAuthStateChanged, signOut, type User as AuthUser } from 'firebase/auth';
-import { auth } from '../scripts/firebase';
+import { auth } from '../../scripts/firebase';
 
 function initializeNavigation() {
   const logoutBtn = document.getElementById('logout-btn') as HTMLButtonElement | null;

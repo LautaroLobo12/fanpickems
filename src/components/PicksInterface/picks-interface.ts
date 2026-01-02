@@ -1,8 +1,8 @@
 // Picks interface functionality
 import { onAuthStateChanged } from 'firebase/auth';
-import type { AuthUser, Team, Tournament, UserPicks } from '../types';
-import { auth } from './firebase';
-import { getCurrentTournament, getTeamsForTournament, getUserPicksForTournament, saveUserPicks, validatePicks } from './picks';
+import type { AuthUser, Team, Tournament, UserPicks } from '../../types';
+import { auth } from '../../scripts/firebase';
+import { getCurrentTournament, getTeamsForTournament, getUserPicksForTournament, saveUserPicks, validatePicks } from '../../scripts/services/picks-service';
 
 interface PicksState {
   tournament: Tournament | null;
@@ -76,11 +76,11 @@ class PicksInterface {
       if (this.state.currentUser) {
         const userPicks = await getUserPicksForTournament(tournament.id, this.state.currentUser.uid);
         this.state.userPicks = userPicks;
-        
+
         if (userPicks && userPicks.picks) {
-          this.state.selectedPicks = { 
+          this.state.selectedPicks = {
             ...this.state.selectedPicks,
-            ...userPicks.picks 
+            ...userPicks.picks
           };
         }
       }
@@ -184,7 +184,7 @@ class PicksInterface {
   private renderTeamsForStage(stageName: string, isDisabled: boolean): string {
     return this.state.teams.map(team => {
       const currentPicks = this.state.selectedPicks[stageName as keyof typeof this.state.selectedPicks];
-      const isSelected = Array.isArray(currentPicks) 
+      const isSelected = Array.isArray(currentPicks)
         ? currentPicks.includes(team.id)
         : currentPicks === team.id;
 
@@ -193,11 +193,11 @@ class PicksInterface {
              data-team-id="${team.id}" 
              data-stage="${stageName}">
           <div class="team-logo">
-            ${team.logo ? 
-              `<img src="${team.logo}" alt="${team.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+            ${team.logo ?
+          `<img src="${team.logo}" alt="${team.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                <div class="team-name-fallback" style="display: none;">${team.name.substring(0, 3).toUpperCase()}</div>` :
-              `<div class="team-name-fallback">${team.name.substring(0, 3).toUpperCase()}</div>`
-            }
+          `<div class="team-name-fallback">${team.name.substring(0, 3).toUpperCase()}</div>`
+        }
           </div>
           <div class="team-name">${team.name}</div>
         </div>
@@ -233,7 +233,7 @@ class PicksInterface {
       stageGrid.querySelectorAll('.team-card').forEach(card => {
         card.classList.remove('selected');
       });
-      
+
       // Select this team
       teamCard.classList.add('selected');
       this.state.selectedPicks[stageName] = teamId as any;
@@ -273,7 +273,7 @@ class PicksInterface {
       const maxPicks = this.state.tournament.stages[stageName as keyof typeof this.state.tournament.stages].maxPicks;
       const currentPicks = this.state.selectedPicks[stageName as keyof typeof this.state.selectedPicks];
       const currentCount = Array.isArray(currentPicks) ? currentPicks.length : (currentPicks ? 1 : 0);
-      
+
       summary.textContent = `Selected: ${currentCount}/${maxPicks}`;
     }
   }
@@ -290,8 +290,8 @@ class PicksInterface {
 
     // Check if user has made at least one pick
     const picks = this.state.selectedPicks;
-    return picks.playoffs.length > 0 || picks.playins.length > 0 || 
-           picks.semifinals.length > 0 || picks.finals.length > 0;
+    return picks.playoffs.length > 0 || picks.playins.length > 0 ||
+      picks.semifinals.length > 0 || picks.finals.length > 0;
   }
 
   private async savePicks() {
@@ -299,7 +299,7 @@ class PicksInterface {
 
     const saveBtn = document.getElementById('save-picks-btn') as HTMLButtonElement;
     const originalText = saveBtn.textContent;
-    
+
     try {
       saveBtn.disabled = true;
       saveBtn.textContent = 'Saving...';
@@ -336,7 +336,7 @@ class PicksInterface {
     const statusEl = document.getElementById('save-status');
     if (statusEl) {
       statusEl.innerHTML = `<div class="${type}">${message}</div>`;
-      
+
       // Clear after 5 seconds
       setTimeout(() => {
         statusEl.innerHTML = '';
@@ -348,7 +348,7 @@ class PicksInterface {
     const names: Record<string, string> = {
       playoffs: 'Playoffs',
       playins: 'Play-ins',
-      semifinals: 'Semifinals', 
+      semifinals: 'Semifinals',
       finals: 'Finals'
     };
     return names[stageName] || stageName;

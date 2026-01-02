@@ -6,14 +6,19 @@ export interface Props {
 }
 
 const { deadline, stageName } = Astro.props;
-const deadlineString = typeof deadline === 'string' ? deadline : deadline.toISOString();
+const deadlineString =
+  typeof deadline === "string" ? deadline : deadline.toISOString();
 ---
 
-<div class="countdown-timer" data-deadline={deadlineString} data-stage={stageName}>
+<div
+  class="countdown-timer"
+  data-deadline={deadlineString}
+  data-stage={stageName}
+>
   <span class="countdown-text">Loading...</span>
 </div>
 
-<script src="../scripts/countdown.ts"></script>
+<script src="./countdown.ts"></script>
 
 <style>
   .countdown-timer {
@@ -26,26 +31,32 @@ const deadlineString = typeof deadline === 'string' ? deadline : deadline.toISOS
     font-weight: 500;
     font-family: monospace;
   }
-  
+
   .countdown-timer.warning {
     background: #fff3cd;
     color: #856404;
   }
-  
+
   .countdown-timer.urgent {
     background: #f8d7da;
     color: #721c24;
     animation: pulse 1s infinite;
   }
-  
+
   .countdown-timer.expired {
     background: #6c757d;
     color: white;
   }
-  
+
   @keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.7; }
-    100% { opacity: 1; }
+    0% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
+    100% {
+      opacity: 1;
+    }
   }
 </style>

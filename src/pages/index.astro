@@ -1,7 +1,7 @@
 ---
 // Login page
-import LoginForm from '../components/LoginForm.astro';
-import Layout from '../layouts/Layout.astro';
+import LoginForm from "../components/LoginForm/LoginForm.astro";
+import Layout from "../layouts/Layout.astro";
 ---
 
 <Layout title="LCK Pickems - Login">
@@ -13,12 +13,12 @@ import Layout from '../layouts/Layout.astro';
 </Layout>
 
 <script>
-  import { waitForAuth } from '../scripts/auth.js';
-  
+  import { waitForAuth } from "../scripts/auth.js";
+
   // Check if user is already authenticated and redirect to picks page
   waitForAuth().then((user) => {
     if (user) {
-      window.location.href = '/picks';
+      window.location.href = "/picks";
     }
   });
 </script>
@@ -33,13 +33,13 @@ import Layout from '../layouts/Layout.astro';
     padding: 2rem;
     text-align: center;
   }
-  
+
   h1 {
     color: #333;
     margin-bottom: 0.5rem;
     font-size: 2.5rem;
   }
-  
+
   p {
     color: #666;
     margin-bottom: 2rem;

@@ -1,6 +1,6 @@
 // Picks management
-import type { PickValidationResult, Tournament, TournamentStageName, UserPicks } from '../types/index.js';
-import { getActiveTournament, getTournamentTeams, getUserPicks, savePicks } from './firestore.js';
+import type { PickValidationResult, Tournament, TournamentStageName, UserPicks } from '../../types/index.js';
+import { getActiveTournament, getTournamentTeams, getUserPicks, savePicks } from '../firestore.js';
 
 // Save user picks for a tournament
 export const saveUserPicks = async (tournamentId: string, userId: string, picks: UserPicks['picks']) => {

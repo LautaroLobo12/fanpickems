@@ -1,6 +1,6 @@
 // Leaderboard data fetching
-import type { LeaderboardEntry, LeaderboardWithUserPosition } from '../types/index.js';
-import { getTournamentLeaderboard } from './firestore.js';
+import type { LeaderboardEntry, LeaderboardWithUserPosition } from '../../types/index.js';
+import { getTournamentLeaderboard } from '../firestore.js';
 import { calculateUserPoints, getPointsBreakdown, updateAllUserPoints } from './points.js';
 
 // Get leaderboard for a tournament

@@ -6,7 +6,9 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "emulators": "firebase emulators:start",
+    "dev:emulator": "firebase emulators:start"
   },
   "dependencies": {
     "astro": "^5.16.6",
@@ -14,6 +16,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.0.3",
+    "firebase-tools": "^13.31.0",
     "typescript": "^5.9.3"
   }
 }

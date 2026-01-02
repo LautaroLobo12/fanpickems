@@ -1,5 +1,5 @@
-import { getCurrentTournament } from '../scripts/picks.js';
-import type { Tournament } from '../types';
+import { getCurrentTournament } from '../../scripts/services/picks-service.js';
+import type { Tournament } from '../../types';
 
 function initializePicksPage() {
     const tournamentInfo = document.getElementById('tournament-info') as HTMLDivElement | null;
