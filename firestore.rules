@@ -26,10 +26,10 @@ service cloud.firestore {
       
       // Tournament picks subcollection - users can read/write their own picks only
       match /picks/{userId} {
-        allow read: if request.auth != null;
+        allow read: if request.auth != null && request.auth.uid == userId;
         allow write, create: if request.auth != null 
           && request.auth.uid == userId
-          && validatePicksData(resource, request.resource);
+          && validatePicksData(request.resource);
         allow delete: if false; // Prevent pick deletion
       }
     }
@@ -39,16 +39,51 @@ service cloud.firestore {
       allow read, write: if false;
     }
     
-    // Function to validate picks data structure
-    function validatePicksData(existingData, newData) {
+    // Function to get tournament data
+    function getTournament(tournamentId) {
+      return get(/databases/$(database)/documents/tournaments/$(tournamentId));
+    }
+    
+    // Function to validate picks data structure and deadlines
+    function validatePicksData(newData) {
       let data = newData.data;
-      
-      return data.keys().hasAll(['uid', 'picks', 'totalPoints', 'lastUpdated'])
+      let tournamentId = request.resource.__name__[1]; // Extract tournamentId from path /tournaments/{tournamentId}/picks/{userId}
+      let tournament = getTournament(tournamentId).data;
+
+      // Basic structure validation
+      let isValidStructure = data.keys().hasAll(['uid', 'picks', 'totalPoints', 'lastUpdated'])
         && data.uid is string
         && data.picks is map
         && data.totalPoints is number
         && data.lastUpdated is timestamp
         && data.uid == request.auth.uid;
+
+      if (!isValidStructure) {
+        return false;
+      }
+
+      // Check deadlines for each stage in the submitted picks
+      let allDeadlinesValid = true;
+      let submittedPicks = data.picks;
+
+      // Check playoffs picks
+      if (submittedPicks.playoffs is list && submittedPicks.playoffs.size() > 0) {
+        allDeadlinesValid = allDeadlinesValid && request.time < tournament.stages.playoffs.deadline;
+      }
+      // Check playins picks
+      if (submittedPicks.playins is list && submittedPicks.playins.size() > 0) {
+        allDeadlinesValid = allDeadlinesValid && request.time < tournament.stages.playins.deadline;
+      }
+      // Check semifinals picks
+      if (submittedPicks.semifinals is list && submittedPicks.semifinals.size() > 0) {
+        allDeadlinesValid = allDeadlinesValid && request.time < tournament.stages.semifinals.deadline;
+      }
+      // Check finals pick (it's a string, not a list)
+      if (submittedPicks.finals is string && submittedPicks.finals.size() > 0) {
+        allDeadlinesValid = allDeadlinesValid && request.time < tournament.stages.finals.deadline;
+      }
+
+      return isValidStructure && allDeadlinesValid;
     }
   }
 }
