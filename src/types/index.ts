@@ -57,6 +57,7 @@ export interface UserPicks {
   };
   totalPoints: number;
   lastUpdated: Timestamp;
+  pointsCalculated?: boolean;
 }
 
 // Leaderboard entry

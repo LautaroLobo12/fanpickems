@@ -11,6 +11,7 @@ import {
 import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import type { AuthUser } from '../types/index.js';
 import { auth, db } from './firebase.js';
+import { maybeUpdateUserPoints } from './services/points.js';
 
 // Auth result types
 interface AuthResult {
@@ -169,3 +170,11 @@ export const waitForAuth = (): Promise<FirebaseUser | null> => {
     });
   });
 };
+
+// Global listener to trigger points calculation when user logs in or refreshes
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    // This will check if conditions are met and update points if necessary
+    maybeUpdateUserPoints(user.uid);
+  }
+});

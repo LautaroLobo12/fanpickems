@@ -1,5 +1,5 @@
 // Tournament-scoped points calculation system
-import { collection, doc, getDocs, updateDoc } from 'firebase/firestore';
+import { collection, doc, getDocs, updateDoc, serverTimestamp } from 'firebase/firestore';
 import type {
   BulkPointsUpdateResult,
   PointsBreakdown,
@@ -9,7 +9,7 @@ import type {
   UserPicks
 } from '../../types';
 import { db } from '../firebase';
-import { getTournament, getUserPicks } from '../firestore';
+import { getActiveTournament, getTournament, getUserPicks } from '../firestore';
 
 /**
  * Calculate points for a user based on their picks and tournament results
@@ -53,7 +53,7 @@ export const calculateStagePoints = (
     return correctPicks.length * pointValue;
   } else {
     // Single pick stage (finals)
-    return stageResults.includes(stagePicks) ? pointValue : 0;
+    return (stagePicks && stageResults.includes(stagePicks)) ? pointValue : 0;
   }
 };
 
@@ -78,9 +78,15 @@ export const updateUserPoints = async (
 
     // Update points in Firestore
     const picksRef = doc(db, 'tournaments', tournamentId, 'picks', userId);
-    await updateDoc(picksRef, {
-      totalPoints: newPoints
-    });
+    const updateData = {
+      totalPoints: newPoints,
+      pointsCalculated: true,
+      lastUpdated: serverTimestamp()
+    };
+
+    await updateDoc(picksRef, updateData);
+
+    console.log(`[Points] Successfully updated points for user ${userId}: ${newPoints} (previously ${userPicks.totalPoints})`);
 
     return {
       success: true,
@@ -88,7 +94,7 @@ export const updateUserPoints = async (
       previousPoints: userPicks.totalPoints
     };
   } catch (error) {
-    console.error('Error updating user points:', error);
+    console.error('[Points] Error updating user points:', error);
     return { success: false, error: (error as Error).message };
   }
 };
@@ -123,11 +129,15 @@ export const updateAllUserPoints = async (tournamentId: string): Promise<BulkPoi
       // Calculate new points
       const newPoints = calculateUserPoints(userPicks, tournament);
 
-      // Only update if points changed
-      if (newPoints !== userPicks.totalPoints) {
-        const updatePromise = updateDoc(doc(db, 'tournaments', tournamentId, 'picks', userId), {
-          totalPoints: newPoints
-        }).then(() => {
+      // Only update if points changed or flag not set
+      if (newPoints !== userPicks.totalPoints || !userPicks.pointsCalculated) {
+        const updateData = {
+          totalPoints: newPoints,
+          pointsCalculated: true,
+          lastUpdated: serverTimestamp()
+        };
+
+        const updatePromise = updateDoc(doc(db, 'tournaments', tournamentId, 'picks', userId), updateData).then(() => {
           updateResults.push({
             userId,
             previousPoints: userPicks.totalPoints,
@@ -149,7 +159,7 @@ export const updateAllUserPoints = async (tournamentId: string): Promise<BulkPoi
       updates: updateResults
     };
   } catch (error) {
-    console.error('Error updating all user points:', error);
+    console.error('[Points] Error updating all user points:', error);
     return { success: false, error: (error as Error).message };
   }
 };
@@ -196,4 +206,50 @@ export const getPointsBreakdown = (userPicks: UserPicks, tournament: Tournament)
   });
 
   return breakdown;
+};
+
+/**
+ * Checks if points should be updated for a user and does so if conditions are met.
+ * Conditions: results are present for at least one stage AND that stage's deadline has passed.
+ */
+export const maybeUpdateUserPoints = async (userId: string): Promise<PointsUpdateResult | { success: boolean; message: string }> => {
+  try {
+    const tournament = await getActiveTournament();
+    if (!tournament) {
+      return { success: false, message: 'No active tournament found' };
+    }
+
+    const userPicks = await getUserPicks(tournament.id, userId);
+    if (!userPicks) {
+      return { success: false, message: 'Picks not found' };
+    }
+
+    // Optimization: Skip if points already calculated for this user
+    if (userPicks.pointsCalculated) {
+      return { success: true, message: 'Points already calculated' };
+    }
+
+    const now = new Date();
+    let shouldUpdate = false;
+
+    // Check if any stage has results AND the deadline has passed
+    Object.values(tournament.stages).forEach((stage) => {
+      const stageResults = stage.results || [];
+      const deadline = stage.deadline?.toDate ? stage.deadline.toDate() : new Date((stage.deadline as any).seconds * 1000);
+
+      if (stageResults.length > 0 && now > deadline) {
+        shouldUpdate = true;
+      }
+    });
+
+    if (shouldUpdate) {
+      console.log(`[Points] Tournament results are ready. Calculating points for user: ${userId}`);
+      return await updateUserPoints(tournament.id, userId);
+    }
+
+    return { success: true, message: 'Conditions for points update not met yet' };
+  } catch (error) {
+    console.error('[Points] Error in maybeUpdateUserPoints:', error);
+    return { success: false, error: (error as Error).message };
+  }
 };

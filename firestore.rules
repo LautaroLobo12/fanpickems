@@ -23,12 +23,22 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow write, create, delete: if isAdmin();
       
-      // Tournament picks subcollection - users can read all picks
+      // Tournament picks subcollection
       match /picks/{userId} {
         allow read: if request.auth != null;
-        allow write, create: if request.auth != null 
+        allow create: if request.auth != null 
           && request.auth.uid == userId
           && validatePicksData(request.resource, tournamentId);
+        allow update: if request.auth != null 
+          && request.auth.uid == userId
+          && (
+               // EXEMPTION: If the core "bets" (picks) are NOT being changed, allow the update.
+               // This covers points calculation, status flags, and timestamps.
+               (request.resource.data.picks == resource.data.picks)
+               || 
+               // Standard Validation: If they ARE changing picks, enforce deadlines and schema.
+               validatePicksData(request.resource, tournamentId)
+             );
         allow delete: if false; // Prevent pick deletion
       }
     }
@@ -55,7 +65,8 @@ service cloud.firestore {
         && data.uid is string
         && data.picks is map
         && data.totalPoints is number
-        && data.lastUpdated is timestamp
+        // Allow both existing timestamps and the incoming server timestamp
+        && (data.lastUpdated is timestamp || data.lastUpdated == request.time)
         && data.uid == auth.uid;
     }
 
