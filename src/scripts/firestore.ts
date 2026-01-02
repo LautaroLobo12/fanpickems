@@ -11,7 +11,8 @@ import {
   serverTimestamp,
   setDoc,
   updateDoc,
-  where
+  where,
+  documentId
 } from 'firebase/firestore';
 import type { DocumentData, DocumentSnapshot, QuerySnapshot } from 'firebase/firestore/lite';
 import { db } from './firebase';
@@ -52,18 +53,18 @@ export const getActiveTournament = async (): Promise<(Tournament & { id: string 
   const tournamentsRef = collection(db, 'tournaments');
   const q = query(tournamentsRef, where('active', '==', true), limit(1));
   const querySnapshot: QuerySnapshot<DocumentData> = await getDocs(q);
-  
+
   if (querySnapshot.empty) {
     return null;
   }
-  
+
   const docSnap = querySnapshot.docs[0];
   return { id: docSnap.id, ...docSnap.data() } as Tournament & { id: string };
 };
 
 export const updateTournamentResults = async (
-  tournamentId: string, 
-  stage: string, 
+  tournamentId: string,
+  stage: string,
   results: string[]
 ): Promise<void> => {
   const tournamentRef = doc(db, 'tournaments', tournamentId);
@@ -74,8 +75,8 @@ export const updateTournamentResults = async (
 
 // Tournament Picks Operations (Subcollection)
 export const savePicks = async (
-  tournamentId: string, 
-  uid: string, 
+  tournamentId: string,
+  uid: string,
   picks: UserPicks['picks']
 ): Promise<void> => {
   const picksRef = doc(db, 'tournaments', tournamentId, 'picks', uid);
@@ -94,13 +95,13 @@ export const getUserPicks = async (tournamentId: string, uid: string): Promise<U
 };
 
 export const getTournamentLeaderboard = async (
-  tournamentId: string, 
+  tournamentId: string,
   limitCount: number = 5
 ): Promise<LeaderboardEntry[]> => {
   const picksRef = collection(db, 'tournaments', tournamentId, 'picks');
   const q = query(picksRef, orderBy('totalPoints', 'desc'), limit(limitCount));
   const querySnapshot: QuerySnapshot<DocumentData> = await getDocs(q);
-  
+
   const leaderboard: LeaderboardEntry[] = [];
   for (const docSnap of querySnapshot.docs) {
     const pickData = docSnap.data() as UserPicks;
@@ -113,7 +114,7 @@ export const getTournamentLeaderboard = async (
       createdAt: userData?.createdAt
     });
   }
-  
+
   return leaderboard;
 };
 
@@ -132,12 +133,12 @@ export const getTeam = async (teamId: string): Promise<Team | null> => {
 export const getAllTeams = async (): Promise<Team[]> => {
   const teamsRef = collection(db, 'teams');
   const querySnapshot: QuerySnapshot<DocumentData> = await getDocs(teamsRef);
-  
+
   const teams: Team[] = [];
   querySnapshot.forEach((doc) => {
     teams.push({ id: doc.id, ...doc.data() } as Team);
   });
-  
+
   return teams;
 };
 
@@ -145,12 +146,12 @@ export const getActiveTeams = async (): Promise<Team[]> => {
   const teamsRef = collection(db, 'teams');
   const q = query(teamsRef, where('active', '==', true));
   const querySnapshot: QuerySnapshot<DocumentData> = await getDocs(q);
-  
+
   const teams: Team[] = [];
   querySnapshot.forEach((doc) => {
     teams.push({ id: doc.id, ...doc.data() } as Team);
   });
-  
+
   return teams;
 };
 
@@ -159,14 +160,33 @@ export const getTournamentTeams = async (tournamentId: string): Promise<Team[]> 
   if (!tournament || !tournament.participatingTeams) {
     return [];
   }
-  
-  const teams: Team[] = [];
-  for (const teamId of tournament.participatingTeams) {
-    const team = await getTeam(teamId);
-    if (team) {
-      teams.push({ ...team, id: teamId });
-    }
+
+  return getTeamsByIds(tournament.participatingTeams);
+};
+
+export const getTeamsByIds = async (teamIds: string[]): Promise<Team[]> => {
+  if (!teamIds || teamIds.length === 0) return [];
+
+  // Firestore 'in' query is limited to 10 items
+  const chunks = [];
+  for (let i = 0; i < teamIds.length; i += 10) {
+    chunks.push(teamIds.slice(i, i + 10));
   }
-  
+
+  const promises = chunks.map(chunk => {
+    const teamsRef = collection(db, 'teams');
+    const q = query(teamsRef, where(documentId(), 'in', chunk));
+    return getDocs(q);
+  });
+
+  const snapshots = await Promise.all(promises);
+  const teams: Team[] = [];
+
+  snapshots.forEach(snap => {
+    snap.forEach(doc => {
+      teams.push({ id: doc.id, ...doc.data() } as Team);
+    });
+  });
+
   return teams;
 };

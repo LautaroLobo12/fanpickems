@@ -1,6 +1,6 @@
 // Picks management
 import type { PickValidationResult, Tournament, TournamentStageName, UserPicks } from '../../types/index.js';
-import { getActiveTournament, getTournamentTeams, getUserPicks, savePicks } from '../firestore.js';
+import { getActiveTournament, getTeamsByIds, getTournamentTeams, getUserPicks, savePicks } from '../firestore.js';
 
 // Save user picks for a tournament
 export const saveUserPicks = async (tournamentId: string, userId: string, picks: UserPicks['picks']) => {
@@ -39,6 +39,16 @@ export const getTeamsForTournament = async (tournamentId: string) => {
     return await getTournamentTeams(tournamentId);
   } catch (error) {
     console.error('Error getting tournament teams:', error);
+    return [];
+  }
+};
+
+// Get teams by their IDs
+export const getTeamsFromIds = async (teamIds: string[]) => {
+  try {
+    return await getTeamsByIds(teamIds);
+  } catch (error) {
+    console.error('Error getting teams by IDs:', error);
     return [];
   }
 };

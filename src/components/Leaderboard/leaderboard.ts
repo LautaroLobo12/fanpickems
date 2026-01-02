@@ -71,7 +71,7 @@ function initializeLeaderboard() {
           <div class="rank">
             ${medal ? `<span class="medal">${medal}</span>` : `<span class="rank-number">${rank}</span>`}
           </div>
-          <div class="user-info">
+          <div class="leaderboard-user-info">
             <span class="display-name">${displayName}</span>
           </div>
           <div class="points">

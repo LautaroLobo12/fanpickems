@@ -24,12 +24,15 @@ export interface TournamentStage {
   maxPicks: number;
   pointValue: number;
   results: string[];
+  description?: string;
+  allowedTeams?: string[];
 }
 
 // Tournament types
 export interface Tournament {
   id: string;
   name: string;
+  description?: string;
   startDate: Timestamp;
   endDate: Timestamp;
   active: boolean;

@@ -2,7 +2,7 @@
 import { onAuthStateChanged } from 'firebase/auth';
 import type { AuthUser, Team, Tournament, UserPicks } from '../../types';
 import { auth } from '../../scripts/firebase';
-import { getCurrentTournament, getTeamsForTournament, getUserPicksForTournament, saveUserPicks, validatePicks } from '../../scripts/services/picks-service';
+import { getCurrentTournament, getTeamsFromIds, getUserPicksForTournament, saveUserPicks, validatePicks } from '../../scripts/services/picks-service';
 
 interface PicksState {
   tournament: Tournament | null;
@@ -69,7 +69,7 @@ class PicksInterface {
       this.state.tournament = tournament;
 
       // Get teams for tournament
-      const teams = await getTeamsForTournament(tournament.id);
+      const teams = await getTeamsFromIds(tournament.participatingTeams);
       this.state.teams = teams;
 
       // Get user's existing picks
@@ -128,7 +128,8 @@ class PicksInterface {
     }
 
     const tournament = this.state.tournament;
-    const stages = Object.entries(tournament.stages);
+    const stages = Object.entries(tournament.stages)
+      .sort(([, a], [, b]) => b.deadline.seconds - a.deadline.seconds);
 
     const stagesHTML = stages.map(([stageName, stageConfig]) => {
       const isDeadlinePassed = new Date() > new Date(stageConfig.deadline.seconds * 1000);
@@ -136,25 +137,45 @@ class PicksInterface {
       const pointValue = stageConfig.pointValue;
       const currentPicks = this.state.selectedPicks[stageName as keyof typeof this.state.selectedPicks];
       const currentPickCount = Array.isArray(currentPicks) ? currentPicks.length : (currentPicks ? 1 : 0);
+      const isComplete = currentPickCount === maxPicks;
+      const description = stageConfig.description;
+
+      let statusBadge = '';
+      if (isDeadlinePassed) {
+        statusBadge = '<span class="status-badge closed">Locked</span>';
+      } else if (isComplete) {
+        statusBadge = '<span class="status-badge complete">Complete</span>';
+      } else if (currentPickCount > 0) {
+        statusBadge = '<span class="status-badge in-progress">In Progress</span>';
+      } else {
+        statusBadge = '<span class="status-badge open">Open</span>';
+      }
 
       return `
-        <div class="stage-section">
+        <div class="stage-section ${isDeadlinePassed ? 'stage-locked' : ''}">
           <div class="stage-header">
-            <h3>${this.formatStageName(stageName)}</h3>
+            <div class="header-top">
+              <div class="stage-title-group">
+                <h3>${this.formatStageName(stageName)}</h3>
+                ${description ? `<span class="stage-description">- ${description}</span>` : ''}
+              </div>
+              ${statusBadge}
+            </div>
             <div class="stage-info">
-              <span class="pick-count">Pick ${maxPicks} team${maxPicks > 1 ? 's' : ''}</span>
-              <span class="points-value">${pointValue} point${pointValue > 1 ? 's' : ''} each</span>
-              <span class="deadline">Deadline: ${this.formatDeadline(stageConfig.deadline)}</span>
-              ${isDeadlinePassed ? '<span class="deadline-passed">Deadline Passed</span>' : ''}
+              <span class="info-item"><i class="icon">📝</i> Pick ${maxPicks}</span>
+              <span class="info-item"><i class="icon">💎</i> ${pointValue} pts</span>
+              <span class="info-item"><i class="icon">⏰</i> ${this.formatDeadline(stageConfig.deadline)}</span>
+            </div>
+            <div class="pick-progress-bar">
+              <div class="progress-fill" style="width: ${(currentPickCount / maxPicks) * 100}%"></div>
+            </div>
+            <div class="pick-counter">
+              ${currentPickCount} / ${maxPicks} Selected
             </div>
           </div>
           
           <div class="teams-grid ${isDeadlinePassed ? 'disabled' : ''}" data-stage="${stageName}" data-max-picks="${maxPicks}">
-            ${this.renderTeamsForStage(stageName, isDeadlinePassed)}
-          </div>
-          
-          <div class="pick-summary">
-            Selected: ${currentPickCount}/${maxPicks}
+            ${this.renderTeamsForStage(stageName, isDeadlinePassed, stageConfig)}
           </div>
         </div>
       `;
@@ -164,7 +185,19 @@ class PicksInterface {
       <div class="picks-content">
         <div class="tournament-header">
           <h2>${tournament.name}</h2>
-          <p>Make your predictions for each tournament stage</p>
+          ${tournament.description ? `<p class="tournament-desc">${tournament.description}</p>` : ''}
+          
+          <div class="tournament-meta">
+            <div class="tournament-dates">
+              <span class="date-range">
+                ${new Date(tournament.startDate.seconds * 1000).toLocaleDateString()} - 
+                ${new Date(tournament.endDate.seconds * 1000).toLocaleDateString()}
+              </span>
+            </div>
+            <div class="tournament-status">
+              <span class="status-badge active">Active Tournament</span>
+            </div>
+          </div>
         </div>
         
         ${stagesHTML}
@@ -181,25 +214,40 @@ class PicksInterface {
     this.bindEvents();
   }
 
-  private renderTeamsForStage(stageName: string, isDisabled: boolean): string {
-    return this.state.teams.map(team => {
+  private renderTeamsForStage(stageName: string, isDisabled: boolean, stageConfig: any): string {
+    // Filter teams if allowedTeams is specified
+    const teamsToDisplay = stageConfig.allowedTeams && stageConfig.allowedTeams.length > 0
+      ? this.state.teams.filter(team => stageConfig.allowedTeams.includes(team.id))
+      : this.state.teams;
+
+    if (teamsToDisplay.length === 0) {
+      return `<div style="grid-column: 1 / -1; text-align: center; color: #666; padding: 2rem;">No teams available for this stage yet.</div>`;
+    }
+
+    return teamsToDisplay.map(team => {
       const currentPicks = this.state.selectedPicks[stageName as keyof typeof this.state.selectedPicks];
       const isSelected = Array.isArray(currentPicks)
         ? currentPicks.includes(team.id)
         : currentPicks === team.id;
 
+      // Generate initials for placeholder
+      const initials = team.name.substring(0, 2).toUpperCase();
+
       return `
         <div class="team-card ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}" 
              data-team-id="${team.id}" 
              data-stage="${stageName}">
-          <div class="team-logo">
+          <div class="selection-indicator">✓</div>
+          <div class="team-logo-container">
             ${team.logo ?
-          `<img src="${team.logo}" alt="${team.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-               <div class="team-name-fallback" style="display: none;">${team.name.substring(0, 3).toUpperCase()}</div>` :
-          `<div class="team-name-fallback">${team.name.substring(0, 3).toUpperCase()}</div>`
+          `<img class="team-logo-img" src="${team.logo}" alt="${team.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+           <div class="team-logo-placeholder" style="display: none;">${initials}</div>` :
+          `<div class="team-logo-placeholder random-bg">${initials}</div>`
         }
           </div>
-          <div class="team-name">${team.name}</div>
+          <div class="team-info">
+            <div class="team-name" title="${team.name}">${team.name}</div>
+          </div>
         </div>
       `;
     }).join('');
@@ -268,13 +316,44 @@ class PicksInterface {
 
   private updatePickSummary(stageName: string) {
     const stageSection = document.querySelector(`[data-stage="${stageName}"]`)?.closest('.stage-section');
-    const summary = stageSection?.querySelector('.pick-summary');
-    if (summary && this.state.tournament) {
-      const maxPicks = this.state.tournament.stages[stageName as keyof typeof this.state.tournament.stages].maxPicks;
-      const currentPicks = this.state.selectedPicks[stageName as keyof typeof this.state.selectedPicks];
-      const currentCount = Array.isArray(currentPicks) ? currentPicks.length : (currentPicks ? 1 : 0);
+    if (!stageSection || !this.state.tournament) return;
 
-      summary.textContent = `Selected: ${currentCount}/${maxPicks}`;
+    const counter = stageSection.querySelector('.pick-counter');
+    const progressFill = stageSection.querySelector('.progress-fill') as HTMLElement;
+    const headerTop = stageSection.querySelector('.header-top');
+
+    const maxPicks = this.state.tournament.stages[stageName as keyof typeof this.state.tournament.stages].maxPicks;
+    const currentPicks = this.state.selectedPicks[stageName as keyof typeof this.state.selectedPicks];
+    const currentCount = Array.isArray(currentPicks) ? currentPicks.length : (currentPicks ? 1 : 0);
+    const isComplete = currentCount === maxPicks;
+
+    // Update counter text
+    if (counter) {
+      counter.textContent = `${currentCount} / ${maxPicks} Selected`;
+    }
+
+    // Update progress bar
+    if (progressFill) {
+      progressFill.style.width = `${(currentCount / maxPicks) * 100}%`;
+    }
+
+    // Update status badge
+    if (headerTop) {
+      const existingBadge = headerTop.querySelector('.status-badge');
+      if (existingBadge) {
+        existingBadge.remove();
+      }
+
+      let statusBadge = '';
+      if (isComplete) {
+        statusBadge = '<span class="status-badge complete">Complete</span>';
+      } else if (currentCount > 0) {
+        statusBadge = '<span class="status-badge in-progress">In Progress</span>';
+      } else {
+        statusBadge = '<span class="status-badge open">Open</span>';
+      }
+
+      headerTop.insertAdjacentHTML('beforeend', statusBadge);
     }
   }
 
