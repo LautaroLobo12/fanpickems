@@ -3,6 +3,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import type { AuthUser, Team, Tournament, UserPicks } from '../../types';
 import { auth } from '../../scripts/firebase';
 import { getCurrentTournament, getTeamsFromIds, getUserPicksForTournament, saveUserPicks, validatePicks } from '../../scripts/services/picks-service';
+import { escapeHtml } from '../../scripts/utils';
 
 interface PicksState {
   tournament: Tournament | null;
@@ -103,7 +104,7 @@ class PicksInterface {
     this.elements.container.innerHTML = `
       <div class="error">
         <h3>Error</h3>
-        <p>${message}</p>
+        <p>${escapeHtml(message)}</p>
         <button onclick="location.reload()" class="retry-btn">Try Again</button>
       </div>
     `;
@@ -154,15 +155,15 @@ class PicksInterface {
           <div class="stage-header">
             <div class="header-top">
               <div class="stage-title-group">
-                <h3>${this.formatStageName(stageName)}</h3>
-                ${description ? `<span class="stage-description">- ${description}</span>` : ''}
+                <h3>${escapeHtml(this.formatStageName(stageName))}</h3>
+                ${description ? `<span class="stage-description">- ${escapeHtml(description)}</span>` : ''}
               </div>
               ${statusBadge}
             </div>
             <div class="stage-info">
               <span class="info-item"><i class="icon">📝</i> Pick ${maxPicks}</span>
               <span class="info-item"><i class="icon">💎</i> ${pointValue} pts</span>
-              <span class="info-item"><i class="icon">⏰</i> ${this.formatDeadline(stageConfig.deadline)}</span>
+              <span class="info-item"><i class="icon">⏰</i> ${escapeHtml(this.formatDeadline(stageConfig.deadline))}</span>
             </div>
             <div class="pick-progress-bar">
               <div class="progress-fill" style="width: ${(currentPickCount / maxPicks) * 100}%"></div>
@@ -172,7 +173,7 @@ class PicksInterface {
             </div>
           </div>
           
-          <div class="teams-grid ${isDeadlinePassed ? 'disabled' : ''}" data-stage="${stageName}" data-max-picks="${maxPicks}">
+          <div class="teams-grid ${isDeadlinePassed ? 'disabled' : ''}" data-stage="${escapeHtml(stageName)}" data-max-picks="${maxPicks}">
             ${this.renderTeamsForStage(stageName, isDeadlinePassed, stageConfig)}
           </div>
         </div>
@@ -182,8 +183,8 @@ class PicksInterface {
     this.elements.container.innerHTML = `
       <div class="picks-content">
         <div class="tournament-header">
-          <h2>${tournament.name}</h2>
-          ${tournament.description ? `<p class="tournament-desc">${tournament.description}</p>` : ''}
+          <h2>${escapeHtml(tournament.name)}</h2>
+          ${tournament.description ? `<p class="tournament-desc">${escapeHtml(tournament.description)}</p>` : ''}
           
           <div class="tournament-meta">
             <div class="tournament-dates">
@@ -233,19 +234,19 @@ class PicksInterface {
 
       return `
         <div class="team-card ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}" 
-             data-team-id="${team.id}" 
-             data-stage="${stageName}">
+             data-team-id="${escapeHtml(team.id)}" 
+             data-stage="${escapeHtml(stageName)}">
           <div class="selection-indicator">✓</div>
           <div class="team-logo-container">
             ${team.logo ?
-          `<img class="team-logo-img" src="${team.logo}" alt="${team.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-           <div class="team-logo-placeholder" style="display: none;">${initials}</div>` :
-          `<div class="team-logo-placeholder random-bg">${initials}</div>`
+          `<img class="team-logo-img" src="${escapeHtml(team.logo)}" alt="${escapeHtml(team.name)}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+           <div class="team-logo-placeholder" style="display: none;">${escapeHtml(initials)}</div>` :
+          `<div class="team-logo-placeholder random-bg">${escapeHtml(initials)}</div>`
         }
           </div>
           <div class="team-info">
-            <div class="team-name team-name-full" title="${team.name}">${team.name}</div>
-            <div class="team-name team-name-short" title="${team.name}">${team.shortName || team.name.substring(0, 3).toUpperCase()}</div>
+            <div class="team-name team-name-full" title="${escapeHtml(team.name)}">${escapeHtml(team.name)}</div>
+            <div class="team-name team-name-short" title="${escapeHtml(team.name)}">${escapeHtml(team.shortName || team.name.substring(0, 3).toUpperCase())}</div>
           </div>
         </div>
       `;
@@ -415,7 +416,7 @@ class PicksInterface {
   private showSaveStatus(message: string, type: 'success' | 'error') {
     const statusEl = document.getElementById('save-status');
     if (statusEl) {
-      statusEl.innerHTML = `<div class="${type}">${message}</div>`;
+      statusEl.innerHTML = `<div class="${escapeHtml(type)}">${escapeHtml(message)}</div>`;
 
       // Clear after 5 seconds
       setTimeout(() => {

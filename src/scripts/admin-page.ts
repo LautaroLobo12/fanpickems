@@ -1,6 +1,7 @@
 import { onAuthStateChanged, type User as AuthUser } from 'firebase/auth';
 import { auth } from '../scripts/firebase';
 import { initializeAllData, initializeTeams, initializeTournament, type InitTournamentData } from '../scripts/initializeData';
+import { escapeHtml } from '../scripts/utils';
 
 
 
@@ -25,7 +26,7 @@ function initializeAdminPage() {
     }
 
     const showStatus = (message: string, type: 'info' | 'success' | 'error' = 'info') => {
-        statusArea.innerHTML = `<div class="status ${type}">${message}</div>`;
+        statusArea.innerHTML = `<div class="status ${escapeHtml(type)}">${escapeHtml(message)}</div>`;
     };
 
     const checkAdminAccess = (user: AuthUser | null): boolean => {

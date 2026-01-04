@@ -2,6 +2,7 @@ import { onAuthStateChanged, type User as AuthUser } from 'firebase/auth';
 import { auth } from '../../scripts/firebase';
 import { getLeaderboardWithUserPosition } from '../../scripts/services/leaderboard-service';
 import { getCurrentTournament } from '../../scripts/services/picks-service';
+import { escapeHtml } from '../../scripts/utils';
 import type { LeaderboardEntry, Tournament } from '../../types';
 
 function initializeLeaderboard() {
@@ -72,7 +73,7 @@ function initializeLeaderboard() {
             ${medal ? `<span class="medal">${medal}</span>` : `<span class="rank-number">${rank}</span>`}
           </div>
           <div class="leaderboard-user-info">
-            <span class="display-name">${displayName}</span>
+            <span class="display-name">${escapeHtml(displayName)}</span>
           </div>
           <div class="points">
             <span class="points-value">${entry.totalPoints}</span>
