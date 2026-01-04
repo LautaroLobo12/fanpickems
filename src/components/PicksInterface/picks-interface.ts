@@ -246,7 +246,8 @@ class PicksInterface {
         }
           </div>
           <div class="team-info">
-            <div class="team-name" title="${team.name}">${team.name}</div>
+            <div class="team-name team-name-full" title="${team.name}">${team.name}</div>
+            <div class="team-name team-name-short" title="${team.name}">${team.shortName || team.name.substring(0, 3).toUpperCase()}</div>
           </div>
         </div>
       `;

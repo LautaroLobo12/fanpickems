@@ -6,15 +6,15 @@ import { createTeam, createTournament } from './firestore.js';
 interface InitTournamentData {
   id: string;
   name: string;
+  description: string;
   startDate: Date;
   endDate: Date;
   active: boolean;
   participatingTeams: string[];
   stages: {
-    playoffs: { deadline: Date; maxPicks: number; pointValue: number; results: string[] };
-    playins: { deadline: Date; maxPicks: number; pointValue: number; results: string[] };
-    semifinals: { deadline: Date; maxPicks: number; pointValue: number; results: string[] };
-    finals: { deadline: Date; maxPicks: number; pointValue: number; results: string[] };
+    'Group Stage': { deadline: Date; maxPicks: number; pointValue: number; results: string[]; allowedTeams: string[], description: string };
+    'Play-Ins': { deadline: Date; maxPicks: number; pointValue: number; results: string[]; allowedTeams: string[], description: string };
+    'Finals Winner': { deadline: Date; maxPicks: number; pointValue: number; results: string[]; allowedTeams: string[], description: string };
   };
 }
 
@@ -23,98 +23,109 @@ const lckTeams: Team[] = [
   {
     id: 't1',
     name: 'T1',
+    shortName: 'T1',
     logo: '/logos/t1.png',
     active: true
   },
   {
-    id: 'gen-g',
+    id: 'geng',
     name: 'Gen.G',
+    shortName: 'GEN',
     logo: '/logos/geng.png',
     active: true
   },
   {
-    id: 'hanwha-life',
+    id: 'hle',
     name: 'Hanwha Life Esports',
+    shortName: 'HLE',
     logo: '/logos/hle.png',
     active: true
   },
   {
-    id: 'kt-rolster',
+    id: 'kt',
     name: 'KT Rolster',
+    shortName: 'KT',
     logo: '/logos/kt.png',
     active: true
   },
   {
     id: 'dk',
-    name: 'DWG KIA',
+    name: 'Dplus KIA',
+    shortName: 'DK',
     logo: '/logos/dk.png',
     active: true
   },
   {
-    id: 'kdf',
-    name: 'Kwangdong Freecs',
-    logo: '/logos/kdf.png',
+    id: 'dns',
+    name: 'DN SOOPers',
+    shortName: 'DNS',
+    logo: '/logos/dns.png',
     active: true
   },
   {
     id: 'drx',
     name: 'DRX',
+    shortName: 'DRX',
     logo: '/logos/drx.png',
     active: true
   },
   {
     id: 'brion',
-    name: 'OK BRION',
+    name: 'HANJIN BRION',
+    shortName: 'BRO',
     logo: '/logos/brion.png',
     active: true
   },
   {
     id: 'ns',
     name: 'Nongshim RedForce',
+    shortName: 'NS',
     logo: '/logos/ns.png',
     active: true
   },
   {
-    id: 'fearx',
-    name: 'FearX',
-    logo: '/logos/fearx.png',
+    id: 'bnk',
+    name: 'BNK FEARX',
+    shortName: 'BNK',
+    logo: '/logos/bnk.png',
     active: true
   }
 ];
 
 // Sample tournament data
 const sampleTournament: InitTournamentData = {
-  id: 'lck-spring-2025',
-  name: 'LCK Spring 2025',
-  startDate: new Date('2025-01-15'),
-  endDate: new Date('2025-04-15'),
+  id: 'lck-cup-2026',
+  name: 'LCK Cup 2026',
+  description: 'Kickoff Tournament',
+  startDate: new Date('2026-01-14'),
+  endDate: new Date('2026-02-25'),
   active: true,
   participatingTeams: [
-    't1', 'gen-g', 'hanwha-life', 'kt-rolster', 'dk',
-    'kdf', 'drx', 'brion', 'ns', 'fearx'
+    't1', 'geng', 'hle', 'kt', 'dk',
+    'dns', 'drx', 'brion', 'ns', 'bnk'
   ],
   stages: {
-    playoffs: {
-      deadline: new Date('2025-03-15T23:59:59'),
-      maxPicks: 6,
-      pointValue: 1,
-      results: [] // Will be filled when playoffs conclude
-    },
-    playins: {
-      deadline: new Date('2025-03-20T23:59:59'),
-      maxPicks: 4,
-      pointValue: 2,
+    'Play-Ins': {
+      deadline: new Date('2026-02-05T00:00:00'),
+      description: 'Choose the 3 teams that will get through to the Playoffs stage',
+      allowedTeams: [],
+      maxPicks: 3,
+      pointValue: 5,
       results: [] // Will be filled when play-ins conclude
     },
-    semifinals: {
-      deadline: new Date('2025-04-05T23:59:59'),
-      maxPicks: 2,
-      pointValue: 3,
+    'Finals Winner': {
+      deadline: new Date('2026-02-10T00:00:00'),
+      description: 'Choose the overall winner of the LCK Cup 2026',
+      maxPicks: 1,
+      pointValue: 15,
+      allowedTeams: [],
       results: [] // Will be filled when semifinals conclude
     },
-    finals: {
-      deadline: new Date('2025-04-12T23:59:59'),
-      maxPicks: 1,
+    'Group Stage': {
+      deadline: new Date('2026-01-14T00:00:0'),
+      description: 'Choose the top three teams that will lock directly into Playoffs',
+      allowedTeams: [],
+      maxPicks: 3,
       pointValue: 5,
       results: [] // Will be filled when finals conclude
     }
