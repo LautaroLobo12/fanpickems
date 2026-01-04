@@ -3,7 +3,7 @@ import type { Team } from '../types/index.js';
 import { createTeam, createTournament } from './firestore.js';
 
 // Define tournament data type with Date objects (not Timestamps)
-interface InitTournamentData {
+export interface InitTournamentData {
   id: string;
   name: string;
   description: string;

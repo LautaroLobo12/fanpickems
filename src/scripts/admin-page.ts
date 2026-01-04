@@ -1,26 +1,12 @@
 import { onAuthStateChanged, type User as AuthUser } from 'firebase/auth';
 import { auth } from '../scripts/firebase';
-import { initializeAllData, initializeTeams, initializeTournament } from '../scripts/initializeData';
+import { initializeAllData, initializeTeams, initializeTournament, type InitTournamentData } from '../scripts/initializeData';
 
-// Define types that match what initializeData actually returns (with Date objects, not Timestamps)
-interface InitDataTournament {
-    id: string;
-    name: string;
-    startDate: Date;
-    endDate: Date;
-    active: boolean;
-    participatingTeams: string[];
-    stages: {
-        playoffs: { deadline: Date; maxPicks: number; pointValue: number; results: string[] };
-        playins: { deadline: Date; maxPicks: number; pointValue: number; results: string[] };
-        semifinals: { deadline: Date; maxPicks: number; pointValue: number; results: string[] };
-        finals: { deadline: Date; maxPicks: number; pointValue: number; results: string[] };
-    };
-}
+
 
 type InitTeamsResult = { success: boolean; count?: number; error?: string };
-type InitTournamentResult = { success: boolean; tournament?: InitDataTournament; error?: string };
-type InitAllResult = { success: boolean; teamsCount?: number; tournament?: InitDataTournament; error?: string };
+type InitTournamentResult = { success: boolean; tournament?: InitTournamentData; error?: string };
+type InitAllResult = { success: boolean; teamsCount?: number; tournament?: InitTournamentData; error?: string };
 
 function initializeAdminPage() {
     const ADMIN_EMAIL = import.meta.env.PUBLIC_ADMIN_EMAIL;
