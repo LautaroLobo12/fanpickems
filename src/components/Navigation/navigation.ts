@@ -49,3 +49,29 @@ function initializeNavigation() {
 }
 
 initializeNavigation();
+
+function initializeScrollNavbar() {
+  const navbar = document.querySelector('.navbar') as HTMLElement | null;
+  if (!navbar) return;
+
+  let lastScrollY = window.scrollY;
+
+  const handleScroll = () => {
+    if (window.innerWidth <= 768) {
+      const currentScrollY = window.scrollY;
+
+      if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        navbar.classList.add('navbar-hidden');
+      } else {
+        navbar.classList.remove('navbar-hidden');
+      }
+      lastScrollY = currentScrollY <= 0 ? 0 : currentScrollY;
+    } else {
+      navbar.classList.remove('navbar-hidden');
+    }
+  };
+
+  window.addEventListener('scroll', handleScroll, { passive: true });
+}
+
+initializeScrollNavbar();
