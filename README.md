@@ -1,10 +1,6 @@
-# Astro Project
+# LCK Fan Pickems
 
-This is a starter project built with Astro.
-
-## ✨ Summary
-
-This project is a web application that showcases the power of Astro. It was bootstrapped using the basic Astro starter kit.
+Web app for LCK (League of Legends Champions League) fan pickems. Built with Astro <3
 
 ## Development Process
 
@@ -17,17 +13,6 @@ This project was developed using a combination of tools to streamline the develo
 ### Polishing and Refinement
 
 **Antigravity** was instrumental in polishing the final product. It was used for improving the user experience (UX), fixing bugs, and ensuring the overall quality of the application.
-
-## Getting Started
-
-To get a local copy up and running, follow these simple steps.
-
-### Prerequisites
-
-*   npm
-    ```sh
-    npm install npm@latest -g
-    ```
 
 ### Installation
 
