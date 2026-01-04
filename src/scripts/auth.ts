@@ -2,6 +2,7 @@
 import {
   browserLocalPersistence,
   GoogleAuthProvider,
+  OAuthProvider, // <--- Added this for Discord
   onAuthStateChanged,
   setPersistence,
   signInWithPopup,
@@ -53,6 +54,40 @@ export const loginWithGoogle = async (): Promise<AuthResult> => {
     };
   } catch (error) {
     console.error('Login error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown login error'
+    };
+  }
+};
+
+/**
+ * Sign in with Discord OAuth (NEW ADDITION)
+ */
+export const loginWithDiscord = async (): Promise<AuthResult> => {
+  // Setup Discord Provider
+  const provider = new OAuthProvider('discord.com');
+  provider.addScope('identify');
+  provider.addScope('email');
+
+  try {
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+
+    // Create or update user document in Firestore (Same logic as Google)
+    await createOrUpdateUser(user);
+
+    return {
+      success: true,
+      user: {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL
+      }
+    };
+  } catch (error) {
+    console.error('Discord Login error:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown login error'
@@ -114,7 +149,7 @@ const createOrUpdateUser = async (user: FirebaseUser): Promise<void> => {
       await setDoc(userRef, {
         uid: user.uid,
         email: user.email,
-        displayName: user.displayName || user.email,
+        displayName: user.displayName || user.email, // Discord might not always return name
         photoURL: user.photoURL || null,
         createdAt
       });
