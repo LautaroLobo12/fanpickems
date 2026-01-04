@@ -4,7 +4,7 @@ name: build and publish to production
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
   build:
