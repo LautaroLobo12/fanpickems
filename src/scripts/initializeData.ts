@@ -122,7 +122,7 @@ const sampleTournament: InitTournamentData = {
       results: [] // Will be filled when semifinals conclude
     },
     'Group Stage': {
-      deadline: new Date('2026-01-14T00:00:0'),
+      deadline: new Date('2026-01-14T00:00:00'),
       description: 'Choose the top three teams that will lock directly into Playoffs',
       allowedTeams: [],
       maxPicks: 3,
