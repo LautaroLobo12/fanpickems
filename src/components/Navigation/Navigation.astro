@@ -12,6 +12,7 @@
       <a href="/picks" class="nav-link">Picks</a>
       <a href="/leaderboard" class="nav-link">Leaderboard</a>
       <button id="logout-btn" class="logout-btn">Logout</button>
+      <button id="theme-toggle-btn" class="theme-toggle-btn">Toggle Theme</button>
     </div>
 
     <div id="user-info" class="user-info">
@@ -27,11 +28,21 @@
 </nav>
 
 <script src="./navigation.ts"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const themeToggleButton = document.getElementById('theme-toggle-btn');
+
+    themeToggleButton.addEventListener('click', () => {
+      const isDark = document.documentElement.classList.toggle('dark');
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    });
+  });
+</script>
 
 <style is:global>
   .navbar {
-    background: white;
-    border-bottom: 1px solid #e0e0e0;
+    background-color: var(--card-background-color);
+    border-bottom: 1px solid var(--border-color);
     padding: 0.75rem 0;
     position: sticky;
     top: 0;
@@ -50,7 +61,7 @@
   .nav-brand a {
     font-size: 1.5rem;
     font-weight: 700;
-    color: #333;
+    color: var(--text-color);
     text-decoration: none;
   }
 
@@ -61,14 +72,14 @@
   }
 
   .nav-link {
-    color: #666;
+    color: var(--text-color);
     text-decoration: none;
     font-weight: 500;
     transition: color 0.2s;
   }
 
   .nav-link:hover {
-    color: #007bff;
+    color: var(--primary-color);
   }
 
   .logout-btn {
@@ -89,6 +100,21 @@
   .logout-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+  }
+
+  .theme-toggle-btn {
+    background-color: var(--primary-color);
+    color: var(--primary-text-color);
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .theme-toggle-btn:hover {
+    background-color: var(--primary-hover-color);
   }
 
   .user-info {
