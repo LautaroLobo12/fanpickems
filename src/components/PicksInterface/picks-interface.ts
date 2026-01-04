@@ -9,12 +9,7 @@ interface PicksState {
   teams: Team[];
   userPicks: UserPicks | null;
   currentUser: AuthUser | null;
-  selectedPicks: {
-    playoffs: string[];
-    playins: string[];
-    semifinals: string[];
-    finals: string;
-  };
+  selectedPicks: Record<string, string[]>;
 }
 
 class PicksInterface {
@@ -23,12 +18,7 @@ class PicksInterface {
     teams: [],
     userPicks: null,
     currentUser: null,
-    selectedPicks: {
-      playoffs: [],
-      playins: [],
-      semifinals: [],
-      finals: ''
-    }
+    selectedPicks: {}
   };
 
   private elements = {
@@ -68,6 +58,13 @@ class PicksInterface {
 
       this.state.tournament = tournament;
 
+      // Initialize selectedPicks structure based on tournament stages
+      // This ensures we have a valid array for every stage defined in the tournament
+      this.state.selectedPicks = {};
+      Object.keys(tournament.stages).forEach(stageName => {
+        this.state.selectedPicks[stageName] = [];
+      });
+
       // Get teams for tournament
       const teams = await getTeamsFromIds(tournament.participatingTeams);
       this.state.teams = teams;
@@ -78,6 +75,7 @@ class PicksInterface {
         this.state.userPicks = userPicks;
 
         if (userPicks && userPicks.picks) {
+          // Merge user picks into state
           this.state.selectedPicks = {
             ...this.state.selectedPicks,
             ...userPicks.picks
@@ -129,7 +127,7 @@ class PicksInterface {
 
     const tournament = this.state.tournament;
     const stages = Object.entries(tournament.stages)
-      .sort(([, a], [, b]) => b.deadline.seconds - a.deadline.seconds);
+      .sort(([, a], [, b]) => a.deadline.seconds - b.deadline.seconds);
 
     const stagesHTML = stages.map(([stageName, stageConfig]) => {
       const isDeadlinePassed = new Date() > new Date(stageConfig.deadline.seconds * 1000);
@@ -276,39 +274,39 @@ class PicksInterface {
     const stageGrid = teamCard.parentElement!;
     const maxPicks = parseInt(stageGrid.dataset.maxPicks!);
 
-    if (maxPicks === 1) {
-      // Single selection (finals)
-      // Deselect all other teams in this stage
-      stageGrid.querySelectorAll('.team-card').forEach(card => {
-        card.classList.remove('selected');
-      });
+    // if (maxPicks === 1) {
+    //   // Single selection (finals)
+    //   // Deselect all other teams in this stage
+    //   stageGrid.querySelectorAll('.team-card').forEach(card => {
+    //     card.classList.remove('selected');
+    //   });
 
-      // Select this team
-      teamCard.classList.add('selected');
-      this.state.selectedPicks[stageName] = teamId as any;
-    } else {
-      // Multiple selection (other stages)
-      const currentPicks = this.state.selectedPicks[stageName] as string[];
-      const isSelected = teamCard.classList.contains('selected');
+    //   // Select this team
+    //   teamCard.classList.add('selected');
+    //   this.state.selectedPicks[stageName].push(teamId);
+    // } else {
+    // Multiple selection (other stages)
+    const currentPicks = this.state.selectedPicks[stageName] || [];
+    const isSelected = teamCard.classList.contains('selected');
 
-      if (isSelected) {
-        // Deselect team
-        teamCard.classList.remove('selected');
-        const index = currentPicks.indexOf(teamId);
-        if (index > -1) {
-          currentPicks.splice(index, 1);
-        }
-      } else {
-        // Select team (if under limit)
-        if (currentPicks.length < maxPicks) {
-          teamCard.classList.add('selected');
-          currentPicks.push(teamId);
-        } else {
-          // Show message about limit
-          this.showSaveStatus(`You can only select ${maxPicks} teams for ${this.formatStageName(stageName)}`, 'error');
-          return;
-        }
+    if (isSelected) {
+      // Deselect team
+      teamCard.classList.remove('selected');
+      const index = currentPicks.indexOf(teamId);
+      if (index > -1) {
+        this.state.selectedPicks[stageName].splice(index, 1);
       }
+    } else {
+      // Select team (if under limit)
+      if (currentPicks.length < maxPicks) {
+        teamCard.classList.add('selected');
+        this.state.selectedPicks[stageName].push(teamId);
+      } else {
+        // Show message about limit
+        this.showSaveStatus(`You can only select ${maxPicks} teams for ${this.formatStageName(stageName)}`, 'error');
+        return;
+      }
+
     }
 
     this.updatePickSummary(stageName);
@@ -368,10 +366,10 @@ class PicksInterface {
   private canSavePicks(): boolean {
     if (!this.state.tournament || !this.state.currentUser) return false;
 
-    // Check if user has made at least one pick
-    const picks = this.state.selectedPicks;
-    return picks.playoffs.length > 0 || picks.playins.length > 0 ||
-      picks.semifinals.length > 0 || picks.finals.length > 0;
+    // Check if user has made at least one pick in any stage
+    return Object.values(this.state.selectedPicks).some(picks =>
+      Array.isArray(picks) && picks.length > 0
+    );
   }
 
   private async savePicks() {

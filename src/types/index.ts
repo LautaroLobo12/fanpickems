@@ -38,24 +38,14 @@ export interface Tournament {
   endDate: Timestamp;
   active: boolean;
   participatingTeams: string[];
-  stages: {
-    playoffs: TournamentStage;
-    playins: TournamentStage;
-    semifinals: TournamentStage;
-    finals: TournamentStage;
-  };
+  stages: Record<string, TournamentStage>;
   createdAt?: Timestamp;
 }
 
 // User picks for a tournament
 export interface UserPicks {
   uid: string;
-  picks: {
-    playoffs: string[];
-    playins: string[];
-    semifinals: string[];
-    finals: string;
-  };
+  picks: Record<string, string[]>;
   totalPoints: number;
   lastUpdated: Timestamp;
   pointsCalculated?: boolean;
@@ -124,7 +114,7 @@ export interface PickValidationResult {
 }
 
 // Tournament stage names
-export type TournamentStageName = 'playoffs' | 'playins' | 'semifinals' | 'finals';
+export type TournamentStageName = string;
 
 // Firebase Auth user type (simplified)
 export interface AuthUser {
