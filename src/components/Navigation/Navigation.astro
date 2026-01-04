@@ -12,7 +12,12 @@
       <a href="/picks" class="nav-link">Picks</a>
       <a href="/leaderboard" class="nav-link">Leaderboard</a>
       <button id="logout-btn" class="logout-btn">Logout</button>
-      <button id="theme-toggle-btn" class="theme-toggle-btn">Toggle Theme</button>
+      <div class="theme-switch-wrapper">
+        <label class="theme-switch" for="theme-toggle-checkbox">
+          <input type="checkbox" id="theme-toggle-checkbox" />
+          <span class="slider round"></span>
+        </label>
+      </div>
     </div>
 
     <div id="user-info" class="user-info">
@@ -30,11 +35,22 @@
 <script src="./navigation.ts"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
-    const themeToggleButton = document.getElementById('theme-toggle-btn');
+    const themeToggleCheckbox = document.getElementById('theme-toggle-checkbox');
 
-    themeToggleButton.addEventListener('click', () => {
-      const isDark = document.documentElement.classList.toggle('dark');
-      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    // Set initial state of the toggle based on the current theme
+    if (document.documentElement.classList.contains('dark')) {
+      themeToggleCheckbox.checked = true;
+    }
+
+    themeToggleCheckbox.addEventListener('change', () => {
+      const isDark = themeToggleCheckbox.checked;
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+      }
     });
   });
 </script>
@@ -102,19 +118,64 @@
     cursor: not-allowed;
   }
 
-  .theme-toggle-btn {
-    background-color: var(--primary-color);
-    color: var(--primary-text-color);
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 0.375rem;
-    font-size: 0.875rem;
-    cursor: pointer;
-    transition: background-color 0.2s;
+  .theme-switch-wrapper {
+    display: flex;
+    align-items: center;
   }
 
-  .theme-toggle-btn:hover {
-    background-color: var(--primary-hover-color);
+  .theme-switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+  }
+
+  .theme-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+  }
+
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+  }
+
+  input:checked + .slider {
+    background-color: var(--primary-color);
+  }
+
+  input:focus + .slider {
+    box-shadow: 0 0 1px var(--primary-color);
+  }
+
+  input:checked + .slider:before {
+    transform: translateX(26px);
+  }
+
+  .slider.round {
+    border-radius: 34px;
+  }
+
+  .slider.round:before {
+    border-radius: 50%;
   }
 
   .user-info {
