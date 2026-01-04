@@ -3,9 +3,9 @@ import type { PickValidationResult, Tournament, TournamentStageName, UserPicks }
 import { getActiveTournament, getTeamsByIds, getTournamentTeams, getUserPicks, savePicks } from '../firestore.js';
 
 // Save user picks for a tournament
-export const saveUserPicks = async (tournamentId: string, userId: string, picks: UserPicks['picks']) => {
+export const saveUserPicks = async (tournamentId: string, userId: string, picks: UserPicks['picks'], isNew: boolean = false) => {
   try {
-    await savePicks(tournamentId, userId, picks);
+    await savePicks(tournamentId, userId, picks, isNew);
     return { success: true };
   } catch (error) {
     console.error('Error saving picks:', error);

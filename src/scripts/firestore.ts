@@ -93,15 +93,22 @@ export const updateTournamentResults = async (
 export const savePicks = async (
   tournamentId: string,
   uid: string,
-  picks: UserPicks['picks']
+  picks: UserPicks['picks'],
+  isNew: boolean = false
 ): Promise<void> => {
   const picksRef = doc(db, 'tournaments', tournamentId, 'picks', uid);
-  await setDoc(picksRef, {
+
+  const data: any = {
     uid,
     picks,
-    totalPoints: 0, // Will be calculated when results are available
     lastUpdated: serverTimestamp()
-  }, { merge: true });
+  };
+
+  if (isNew) {
+    data.totalPoints = 0; // Only set to 0 for new picks
+  }
+
+  await setDoc(picksRef, data, { merge: true });
 };
 
 export const getUserPicks = async (tournamentId: string, uid: string): Promise<UserPicks | null> => {

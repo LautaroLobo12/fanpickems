@@ -28,7 +28,7 @@ service cloud.firestore {
         allow read: if request.auth != null;
         allow create: if request.auth != null 
           && request.auth.uid == userId
-          && validatePicksData(request.resource, tournamentId);
+          && validatePicksData(request.resource, tournamentId, {"data": {"picks": {}}});
         allow update: if request.auth != null 
           && request.auth.uid == userId
           && (
@@ -37,7 +37,7 @@ service cloud.firestore {
                (request.resource.data.picks == resource.data.picks)
                || 
                // Standard Validation: If they ARE changing picks, enforce deadlines and schema.
-               validatePicksData(request.resource, tournamentId)
+               validatePicksData(request.resource, tournamentId, resource)
              );
         allow delete: if false; // Prevent pick deletion
       }
@@ -71,22 +71,31 @@ service cloud.firestore {
     }
 
     // Helper function to check deadline for a specific stage
-    function _isStageDeadlineValid(picks, stageName, tournamentStages, requestTime) {
-      return !(picks[stageName] is list && picks[stageName].size() > 0) || (tournamentStages[stageName] != null && requestTime < tournamentStages[stageName].deadline);
+    function _isStageDeadlineValid(newData, stageName, tournamentStages, requestTime, oldData) {
+      return 
+        // If Stage doesn't exist in new data, it's valid (neutral)
+        !(stageName in newData.data.picks)
+        || 
+        // If picks for this stage are identical to old picks, allow it (even if closed)
+        (oldData != null && (stageName in oldData.data.picks) && newData.data.picks[stageName] == oldData.data.picks[stageName])
+        ||
+        // Otherwise, enforce deadline and existence in tournament
+        (tournamentStages[stageName] != null && requestTime < tournamentStages[stageName].deadline);
     }
     
-    // Helper function to check deadline for finals (string)
-    function _isFinalsDeadlineValid(picks, tournamentStages, requestTime) {
-      return !(picks.finals is string && picks.finals.size() > 0) || (tournamentStages.finals != null && requestTime < tournamentStages.finals.deadline);
-    }
-
     // Main validation function
-    function validatePicksData(newData, tournamentId) {
+    function validatePicksData(newData, tournamentId, oldData) {
+      let tournamentData = getTournament(tournamentId).data;
+      let stages = tournamentData.stages;
       return _isValidStructure(newData.data, request.auth)
-        && _isStageDeadlineValid(newData.data.picks, 'playoffs', getTournament(tournamentId).data.stages, request.time)
-        && _isStageDeadlineValid(newData.data.picks, 'playins', getTournament(tournamentId).data.stages, request.time)
-        && _isStageDeadlineValid(newData.data.picks, 'semifinals', getTournament(tournamentId).data.stages, request.time)
-        && _isFinalsDeadlineValid(newData.data.picks, getTournament(tournamentId).data.stages, request.time);
+        // Hardcode common stage names since iteration is not supported in CEL
+        && _isStageDeadlineValid(newData, 'Group Stage', stages, request.time, oldData)
+        && _isStageDeadlineValid(newData, 'Play-Ins', stages, request.time, oldData)
+        && _isStageDeadlineValid(newData, 'Finals Winner', stages, request.time, oldData)
+        && _isStageDeadlineValid(newData, 'playoffs', stages, request.time, oldData)
+        && _isStageDeadlineValid(newData, 'playins', stages, request.time, oldData)
+        && _isStageDeadlineValid(newData, 'semifinals', stages, request.time, oldData)
+        && _isStageDeadlineValid(newData, 'finals', stages, request.time, oldData);
     }
   }
 }

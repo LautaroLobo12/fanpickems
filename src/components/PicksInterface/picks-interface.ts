@@ -390,10 +390,12 @@ class PicksInterface {
       }
 
       // Save picks
+      const isNew = !this.state.userPicks;
       const result = await saveUserPicks(
         this.state.tournament.id,
         this.state.currentUser.uid,
-        this.state.selectedPicks
+        this.state.selectedPicks,
+        isNew
       );
 
       if (result.success) {
