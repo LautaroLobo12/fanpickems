@@ -9,8 +9,11 @@
     "astro": "astro"
   },
   "dependencies": {
+    "@astrojs/node": "^9.5.1",
     "astro": "^5.16.6",
-    "firebase": "^12.7.0"
+    "axios": "^1.13.2",
+    "firebase": "^12.7.0",
+    "firebase-admin": "^13.6.0"
   },
   "devDependencies": {
     "@types/node": "^25.0.3",

@@ -2,10 +2,10 @@
 import {
   browserLocalPersistence,
   GoogleAuthProvider,
-  OAuthProvider, // <--- Added this for Discord
   onAuthStateChanged,
   setPersistence,
   signInWithPopup,
+  signInWithCustomToken,
   signOut,
   type User as FirebaseUser
 } from 'firebase/auth';
@@ -62,37 +62,52 @@ export const loginWithGoogle = async (): Promise<AuthResult> => {
 };
 
 /**
- * Sign in with Discord OAuth (NEW ADDITION)
+ * Sign in with Discord OAuth (Redirect Flow)
  */
-export const loginWithDiscord = async (): Promise<AuthResult> => {
-  // Setup Discord Provider
-  const provider = new OAuthProvider('discord.com');
-  provider.addScope('identify');
-  provider.addScope('email');
+export const loginWithDiscord = async (): Promise<void> => {
+  const clientId = import.meta.env.PUBLIC_DISCORD_CLIENT_ID;
+  const redirectUri = encodeURIComponent(import.meta.env.PUBLIC_DISCORD_REDIRECT_URI);
+  const scope = encodeURIComponent('identify+email');
 
-  try {
-    const result = await signInWithPopup(auth, provider);
-    const user = result.user;
+  const discordAuthUrl = `https://discord.com/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`;
 
-    // Create or update user document in Firestore (Same logic as Google)
-    await createOrUpdateUser(user);
+  window.location.href = discordAuthUrl;
+};
 
-    return {
-      success: true,
-      user: {
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL
-      }
-    };
-  } catch (error) {
-    console.error('Discord Login error:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown login error'
-    };
+/**
+ * Handle custom token login if present in URL hash
+ */
+export const handleTokenInUrl = async (): Promise<AuthResult | null> => {
+  const hash = window.location.hash;
+  if (hash.startsWith('#token=')) {
+    const token = hash.replace('#token=', '');
+    // Clean up URL
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+
+    try {
+      const result = await signInWithCustomToken(auth, token);
+      const user = result.user;
+
+      await createOrUpdateUser(user);
+
+      return {
+        success: true,
+        user: {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName,
+          photoURL: user.photoURL
+        }
+      };
+    } catch (error) {
+      console.error('Custom token sign-in error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown sign-in error'
+      };
+    }
   }
+  return null;
 };
 
 /**
@@ -149,7 +164,7 @@ const createOrUpdateUser = async (user: FirebaseUser): Promise<void> => {
       await setDoc(userRef, {
         uid: user.uid,
         email: user.email,
-        displayName: user.displayName || user.email, // Discord might not always return name
+        displayName: user.displayName || user.email,
         photoURL: user.photoURL || null,
         createdAt
       });
