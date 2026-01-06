@@ -1,12 +1,14 @@
 ---
 // Login page
+import { Image } from "astro:assets";
 import LoginForm from "../components/LoginForm/LoginForm.astro";
 import Layout from "../layouts/Layout.astro";
+import app_logo from "../assets/app_logo.png";
 ---
 
 <Layout title="LCK Pickems - Login">
   <div class="login-container">
-    <h1>LCK Pickems</h1>
+    <Image src={app_logo} alt="LCK Fan Pickems" class="login-logo" />
     <p>Login to make your tournament predictions</p>
     <LoginForm />
   </div>
@@ -44,5 +46,17 @@ import Layout from "../layouts/Layout.astro";
     color: #666;
     margin-bottom: 2rem;
     font-size: 1.1rem;
+  }
+
+  .login-container .login-logo {
+    max-width: 700px; /* Adjust as needed */
+    height: auto;
+    margin-bottom: 2rem; /* Add some space below the logo */
+  }
+
+  @media (max-width: 768px) {
+    .login-container .login-logo {
+      max-width: 380px;
+    }
   }
 </style>

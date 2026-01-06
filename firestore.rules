@@ -14,13 +14,13 @@ service cloud.firestore {
     
     // Teams collection - read-only for authenticated users, admin-only writes
     match /teams/{teamId} {
-      allow read: if request.auth != null;
+      allow read: if true;
       allow write, create, delete: if isAdmin();
     }
     
     // Tournaments collection - read-only for authenticated users, admin-only writes
     match /tournaments/{tournamentId} {
-      allow read: if request.auth != null;
+      allow read: if true;
       allow write, create, delete: if isAdmin();
       
       // Tournament picks subcollection

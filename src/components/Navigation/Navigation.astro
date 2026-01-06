@@ -1,4 +1,6 @@
 ---
+import { Image } from "astro:assets";
+import app_logo from "../../assets/app_logo.png";
 // Simple navigation between screens
 ---
 
@@ -6,7 +8,7 @@
   <div class="nav-container">
     <div class="nav-brand">
       <a href="/picks">
-        <img src="/navbar_logo.png" alt="LCK Fan Pickems" class="nav-logo" />
+        <Image src={app_logo} alt="LCK Fan Pickems" class="nav-logo" />
       </a>
     </div>
 
@@ -63,6 +65,7 @@
 
   .nav-logo {
     height: 40px;
+    width: auto;
   }
 
   .nav-links {

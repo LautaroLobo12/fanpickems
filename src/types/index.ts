@@ -40,6 +40,7 @@ export interface Tournament {
   participatingTeams: string[];
   stages: Record<string, TournamentStage>;
   createdAt?: Timestamp;
+  picks?: UserPicks[];
 }
 
 // User picks for a tournament

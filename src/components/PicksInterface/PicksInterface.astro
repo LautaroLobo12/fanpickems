@@ -1,9 +1,289 @@
 ---
-// Tournament bracket selection
+import { Image } from "astro:assets";
+import {
+  getCurrentTournament,
+  getTeamsFromIds,
+} from "../../scripts/services/picks-service";
+import type { Team } from "../../types";
+import { getAuth } from "firebase/auth";
+import { getFirestore, doc, getDoc } from "firebase/firestore";
+
+// Import all logos
+import bnkLogo from "../../assets/logos/bnk.webp";
+import brionLogo from "../../assets/logos/brion.webp";
+import dkLogo from "../../assets/logos/dk.webp";
+import dnsLogo from "../../assets/logos/dns.webp";
+import drxLogo from "../../assets/logos/drx.webp";
+import gengLogo from "../../assets/logos/geng.webp";
+import hleLogo from "../../assets/logos/hle.webp";
+import ktLogo from "../../assets/logos/kt.webp";
+import nsLogo from "../../assets/logos/ns.webp";
+import t1Logo from "../../assets/logos/t1.webp";
+
+// Create a map of team IDs to imported image modules
+const logoMap: Record<string, ImageMetadata> = {
+  bnk: bnkLogo,
+  brion: brionLogo,
+  dk: dkLogo,
+  dns: dnsLogo,
+  drx: drxLogo,
+  geng: gengLogo,
+  hle: hleLogo,
+  kt: ktLogo,
+  ns: nsLogo,
+  t1: t1Logo,
+};
+
+const tournament = await getCurrentTournament();
+
+let teams: Team[] = [];
+let initialSelectedPicks: Record<string, string[]> = {};
+let currentUserUid: string | null = null;
+
+const auth = getAuth();
+const db = getFirestore();
+
+// Note: User authentication and pick fetching are handled on the client side
+// to support static site generation (SSG).
+
+if (tournament) {
+  teams = await getTeamsFromIds(tournament.participatingTeams);
+}
+
+// Helper function to format stage name
+const formatStageName = (stageName: string): string => {
+  const names: Record<string, string> = {
+    playoffs: "Playoffs",
+    playins: "Play-ins",
+    semifinals: "Semifinals",
+    finals: "Finals",
+  };
+  return names[stageName] || stageName;
+};
+
+// Helper function to format deadline
+const formatDeadline = (deadline: any): string => {
+  const date = new Date(deadline.seconds * 1000);
+  return (
+    date.toLocaleDateString() +
+    " " +
+    date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  );
+};
+
+// Helper function to escape HTML
+const escapeHtml = (str: string | undefined): string => {
+  if (typeof str !== "string") return "";
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+};
 ---
 
-<div class="picks-interface" id="picks-interface">
-  <div class="loading-picks">Loading tournament picks...</div>
+<div
+  class="picks-interface"
+  id="picks-interface"
+  data-tournament={JSON.stringify(tournament)}
+  data-teams={JSON.stringify(teams)}
+  data-initial-picks={JSON.stringify(initialSelectedPicks)}
+  data-current-user-uid={currentUserUid}
+>
+  {
+    !tournament ? (
+      <div class="no-tournament">
+        <h3>No Active Tournament</h3>
+        <p>There are currently no active tournaments available for picks.</p>
+        <p>Check back later when a new tournament starts!</p>
+      </div>
+    ) : (
+      <div class="picks-content">
+        <div class="tournament-header">
+          <h2>{tournament.name}</h2>
+          {tournament.description && (
+            <p class="tournament-desc">{tournament.description}</p>
+          )}
+
+          <div class="tournament-meta">
+            <div class="tournament-dates">
+              <span class="date-range">
+                {new Date(
+                  tournament.startDate.seconds * 1000,
+                ).toLocaleDateString()}{" "}
+                -
+                {new Date(
+                  tournament.endDate.seconds * 1000,
+                ).toLocaleDateString()}
+              </span>
+            </div>
+            <div class="tournament-status">
+              <span class="status-badge active">Active Tournament</span>
+            </div>
+          </div>
+        </div>
+
+        {Object.entries(tournament.stages)
+          .sort(([, a], [, b]) => a.deadline.seconds - b.deadline.seconds)
+          .map(([stageName, stageConfig]) => {
+            const isDeadlinePassed =
+              new Date() > new Date(stageConfig.deadline.seconds * 1000);
+            const maxPicks = stageConfig.maxPicks;
+            const pointValue = stageConfig.pointValue;
+            const currentPicks = initialSelectedPicks[stageName] || [];
+            const currentPickCount = currentPicks.length;
+            const isComplete = currentPickCount === maxPicks;
+            const description = stageConfig.description;
+
+            let statusBadgeClass = "";
+            let statusBadgeText = "";
+
+            if (isDeadlinePassed) {
+              statusBadgeClass = "closed";
+              statusBadgeText = "Locked";
+            } else if (isComplete) {
+              statusBadgeClass = "complete";
+              statusBadgeText = "Complete";
+            } else if (currentPickCount > 0) {
+              statusBadgeClass = "in-progress";
+              statusBadgeText = "In Progress";
+            } else {
+              statusBadgeClass = "open";
+              statusBadgeText = "Open";
+            }
+
+            // Determine if the grid should be disabled (deadline passed or no user logged in)
+            const isDisabled = isDeadlinePassed || !currentUserUid;
+
+            // Filter teams if allowedTeams is specified
+            const teamsToDisplay =
+              stageConfig.allowedTeams && stageConfig.allowedTeams.length > 0
+                ? teams.filter((team) =>
+                    stageConfig.allowedTeams!.includes(team.id),
+                  )
+                : teams;
+
+            return (
+              <div
+                class={`stage-section ${isDeadlinePassed ? "stage-locked" : ""}`}
+                data-stage-name={escapeHtml(stageName)}
+              >
+                <div class="stage-header">
+                  <div class="header-top">
+                    <div class="stage-title-group">
+                      <h3>{formatStageName(stageName)}</h3>
+                      {description && (
+                        <span class="stage-description">- {description}</span>
+                      )}
+                    </div>
+                    <span class={`status-badge ${statusBadgeClass}`}>
+                      {statusBadgeText}
+                    </span>
+                  </div>
+                  <div class="stage-info">
+                    <span class="info-item">
+                      <i class="icon">📝</i> Pick {maxPicks}
+                    </span>
+                    <span class="info-item">
+                      <i class="icon">💎</i> {pointValue} pts
+                    </span>
+                    <span class="info-item">
+                      <i class="icon">⏰</i>{" "}
+                      {formatDeadline(stageConfig.deadline)}
+                    </span>
+                  </div>
+                  <div class="pick-progress-bar">
+                    <div
+                      class="progress-fill"
+                      style={`width: ${(currentPickCount / maxPicks) * 100}%`}
+                    />
+                  </div>
+                  <div class="pick-counter">
+                    {currentPickCount} / {maxPicks} Selected
+                  </div>
+                </div>
+
+                <div
+                  class={`teams-grid ${isDisabled ? "disabled" : ""}`}
+                  data-stage={stageName}
+                  data-max-picks={maxPicks}
+                >
+                  {teamsToDisplay.length === 0 ? (
+                    <div style="grid-column: 1 / -1; text-align: center; color: #666; padding: 2rem;">
+                      No teams available for this stage yet.
+                    </div>
+                  ) : (
+                    teamsToDisplay.map((team) => {
+                      const isSelected = currentPicks.includes(team.id);
+                      const initials = team.name.substring(0, 2).toUpperCase();
+
+                      return (
+                        <div
+                          class={`team-card ${isSelected ? "selected" : ""} ${isDisabled ? "disabled" : ""}`}
+                          data-team-id={escapeHtml(team.id)}
+                          data-stage={escapeHtml(stageName)}
+                        >
+                          <div class="selection-indicator">✓</div>
+                          <div class="team-logo-container">
+                            {logoMap[team.id] ? (
+                              <Image
+                                src={logoMap[team.id]}
+                                alt={team.name}
+                                width={40}
+                                height={40}
+                                loading="lazy"
+                                decoding="async"
+                                class="team-logo-img"
+                              />
+                            ) : (
+                              <div class="team-logo-placeholder random-bg">
+                                {initials}
+                              </div>
+                            )}
+                          </div>
+                          <div class="team-info">
+                            <div
+                              class="team-name team-name-full"
+                              title={team.name}
+                            >
+                              {team.name}
+                            </div>
+                            <div
+                              class="team-name team-name-short"
+                              title={team.name}
+                            >
+                              {team.shortName ||
+                                team.name.substring(0, 3).toUpperCase()}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
+        <div class="picks-actions">
+          <button
+            id="save-picks-btn"
+            class="save-btn"
+            disabled={
+              !currentUserUid ||
+              !Object.values(initialSelectedPicks).some(
+                (picks) => Array.isArray(picks) && picks.length > 0,
+              )
+            }
+          >
+            Save Picks
+          </button>
+          <div id="save-status" class="save-status" />
+        </div>
+      </div>
+    )
+  }
 </div>
 
 <script src="./picks-interface.ts"></script>
