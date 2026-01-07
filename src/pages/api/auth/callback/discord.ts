@@ -14,11 +14,11 @@ export const GET: APIRoute = async ({ url, redirect }) => {
         const tokenResponse = await axios.post(
             'https://discord.com/api/oauth2/token',
             new URLSearchParams({
-                client_id: process.env.DISCORD_CLIENT_ID || '',
-                client_secret: process.env.DISCORD_CLIENT_SECRET || '',
+                client_id: import.meta.env.DISCORD_CLIENT_ID || '',
+                client_secret: import.meta.env.DISCORD_CLIENT_SECRET || '',
                 grant_type: 'authorization_code',
                 code: code,
-                redirect_uri: process.env.DISCORD_REDIRECT_URI || '',
+                redirect_uri: import.meta.env.DISCORD_REDIRECT_URI || '',
             }),
             {
                 headers: {
@@ -39,16 +39,35 @@ export const GET: APIRoute = async ({ url, redirect }) => {
         const discordUser = userResponse.data;
         const discordId = discordUser.id;
 
-        // 3. Create Firebase Custom Token
-        // We use the Discord ID as the UID for consistency
-        const customToken = await adminAuth.createCustomToken(`discord:${discordId}`, {
-            discordId: discordId,
-            email: discordUser.email,
-            displayName: discordUser.global_name || discordUser.username,
-            photoURL: discordUser.avatar
-                ? `https://cdn.discordapp.com/avatars/${discordId}/${discordUser.avatar}.png`
-                : null,
-        });
+        const displayName = discordUser.global_name || discordUser.username;
+        const photoURL = discordUser.avatar
+            ? `https://cdn.discordapp.com/avatars/${discordId}/${discordUser.avatar}.png`
+            : null;
+
+        // 3. Update or Create User in Firebase Auth
+        // This ensures user.displayName and user.email are set for the frontend
+        const uid = `discord:${discordId}`;
+        try {
+            await adminAuth.updateUser(uid, {
+                email: discordUser.email,
+                displayName: displayName,
+                photoURL: photoURL,
+            });
+        } catch (error: any) {
+            if (error.code === 'auth/user-not-found') {
+                await adminAuth.createUser({
+                    uid: uid,
+                    email: discordUser.email,
+                    displayName: displayName,
+                    photoURL: photoURL,
+                });
+            } else {
+                console.error('Error updating/creating Firebase user:', error);
+            }
+        }
+
+        // 4. Create Firebase Custom Token
+        const customToken = await adminAuth.createCustomToken(uid);
 
         // 4. Redirect back to a page that will handle the login
         // We pass the token in a hash or query param (hash is safer as it doesn't go to server logs)

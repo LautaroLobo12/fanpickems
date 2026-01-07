@@ -1,13 +1,21 @@
 import admin from 'firebase-admin';
 
+const projectId = import.meta.env.FIREBASE_PROJECT_ID;
+const clientEmail = import.meta.env.FIREBASE_CLIENT_EMAIL;
+const privateKey = import.meta.env.FIREBASE_PRIVATE_KEY;
+
 if (!admin.apps.length) {
-    admin.initializeApp({
-        credential: admin.credential.cert({
-            projectId: process.env.FIREBASE_PROJECT_ID,
-            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-            privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-        }),
-    });
+    if (!projectId || !clientEmail || !privateKey) {
+        console.warn('Firebase Admin credentials missing from environment variables.');
+    } else {
+        admin.initializeApp({
+            credential: admin.credential.cert({
+                projectId: projectId,
+                clientEmail: clientEmail,
+                privateKey: privateKey.replace(/\\n/g, '\n'),
+            }),
+        });
+    }
 }
 
 export const adminAuth = admin.auth();
