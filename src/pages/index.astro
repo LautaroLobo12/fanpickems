@@ -15,7 +15,14 @@ import app_logo from "../assets/app_logo.png";
 </Layout>
 
 <script>
-  import { waitForAuth } from "../scripts/auth.js";
+  import { waitForAuth, handleTokenInUrl } from "../scripts/auth.js";
+
+  // Check for custom token from Discord redirect first
+  handleTokenInUrl().then((result) => {
+    if (result?.success) {
+      window.location.href = "/picks";
+    }
+  });
 
   // Check if user is already authenticated and redirect to picks page
   waitForAuth().then((user) => {
