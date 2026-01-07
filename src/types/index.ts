@@ -124,3 +124,10 @@ export interface AuthUser {
   displayName: string | null;
   photoURL: string | null;
 }
+
+// Public user profile type
+export interface PublicUserProfile {
+  uid: string;
+  displayName: string;
+  createdAt: Timestamp;
+}
