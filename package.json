@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@astrojs/node": "^9.5.1",
+    "@astrojs/partytown": "^2.1.4",
     "astro": "^5.16.6",
     "axios": "^1.13.2",
     "firebase": "^12.7.0",
