@@ -5,6 +5,7 @@ import {
   onAuthStateChanged,
   setPersistence,
   signInWithPopup,
+  signInWithCustomToken,
   signOut,
   type User as FirebaseUser
 } from 'firebase/auth';
@@ -58,6 +59,57 @@ export const loginWithGoogle = async (): Promise<AuthResult> => {
       error: error instanceof Error ? error.message : 'Unknown login error'
     };
   }
+};
+
+/**
+ * Sign in with Discord OAuth (Redirect Flow)
+ */
+export const loginWithDiscord = async (): Promise<void> => {
+  const clientId = import.meta.env.PUBLIC_DISCORD_CLIENT_ID;
+  const region = import.meta.env.PUBLIC_FIREBASE_REGION || 'us-central1';
+  const projectId = import.meta.env.PUBLIC_FIREBASE_PROJECT_ID;
+  const redirectUri = encodeURIComponent(`https://${region}-${projectId}.cloudfunctions.net/discordAuthRedirect`);
+  const scope = encodeURIComponent('identify email');
+
+  const discordAuthUrl = `https://discord.com/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`;
+
+  window.location.href = discordAuthUrl;
+};
+
+/**
+ * Handle custom token login if present in URL hash
+ */
+export const handleTokenInUrl = async (): Promise<AuthResult | null> => {
+  const hash = window.location.hash;
+  if (hash.startsWith('#token=')) {
+    const token = hash.replace('#token=', '');
+    // Clean up URL
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+
+    try {
+      const result = await signInWithCustomToken(auth, token);
+      const user = result.user;
+
+      await createOrUpdateUser(user);
+
+      return {
+        success: true,
+        user: {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName,
+          photoURL: user.photoURL
+        }
+      };
+    } catch (error) {
+      console.error('Custom token sign-in error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown sign-in error'
+      };
+    }
+  }
+  return null;
 };
 
 /**
