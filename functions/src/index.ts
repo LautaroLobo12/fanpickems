@@ -21,7 +21,11 @@ export const discordAuthRedirect = onRequest(
         }
 
         try {
+            logger.info("Starting Discord Auth for code:", code);
             // 1. Exchange code for access token
+            const redirectUri = `https://${process.env.FUNCTION_REGION || "us-central1"}-lck-pickems.cloudfunctions.net/discordAuthRedirect`;
+            logger.info("Using redirectUri for token swap:", redirectUri);
+
             const tokenResponse = await axios.post(
                 "https://discord.com/api/oauth2/token",
                 new URLSearchParams({
@@ -29,7 +33,7 @@ export const discordAuthRedirect = onRequest(
                     client_secret: discordClientSecret.value(),
                     grant_type: "authorization_code",
                     code: code,
-                    redirect_uri: `https://${process.env.FUNCTION_REGION || "us-central1"}-${process.env.GCLOUD_PROJECT}.cloudfunctions.net/discordAuthRedirect`,
+                    redirect_uri: redirectUri,
                 }),
                 {
                     headers: {
@@ -39,6 +43,7 @@ export const discordAuthRedirect = onRequest(
             );
 
             const { access_token } = tokenResponse.data;
+            logger.info("Successfully obtained access token");
 
             // 2. Fetch user info from Discord
             const userResponse = await axios.get("https://discord.com/api/users/@me", {
@@ -48,6 +53,7 @@ export const discordAuthRedirect = onRequest(
             });
 
             const discordUser = userResponse.data;
+            logger.info("Fetched Discord user:", discordUser.username);
             const discordId = discordUser.id;
             const displayName = discordUser.global_name || discordUser.username;
             const photoURL = discordUser.avatar ?
@@ -62,6 +68,7 @@ export const discordAuthRedirect = onRequest(
                     displayName: displayName,
                     photoURL: photoURL,
                 });
+                logger.info("Updated existing user:", uid);
             } catch (error: any) {
                 if (error.code === "auth/user-not-found") {
                     await admin.auth().createUser({
@@ -70,19 +77,23 @@ export const discordAuthRedirect = onRequest(
                         displayName: displayName,
                         photoURL: photoURL,
                     });
+                    logger.info("Created new user:", uid);
                 } else {
                     logger.error("Error updating/creating Firebase user:", error);
+                    throw error;
                 }
             }
 
             // 4. Create Firebase Custom Token
             const customToken = await admin.auth().createCustomToken(uid);
+            logger.info("Created custom token for:", uid);
 
             // 5. Redirect back to the frontend
             res.redirect(`https://fanpickems.lautarolobo.xyz/#token=${customToken}`);
         } catch (error: any) {
-            logger.error("Discord Auth Error:", error.response?.data || error.message);
-            res.status(500).send("Authentication failed");
+            const errorData = error.response?.data;
+            logger.error("Discord Auth Error Details:", JSON.stringify(errorData || error.message));
+            res.status(500).send(`Authentication failed: ${error.message}`);
         }
     }
 );
