@@ -27,6 +27,7 @@ jobs:
           PUBLIC_FIREBASE_APP_ID: ${{ secrets.PUBLIC_FIREBASE_APP_ID }}
           PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.PUBLIC_FIREBASE_MEASUREMENT_ID }}
           PUBLIC_ADMIN_EMAIL: ${{ secrets.PUBLIC_ADMIN_EMAIL }}
+          PUBLIC_DISCORD_CLIENT_ID: ${{ secrets.PUBLIC_DISCORD_CLIENT_ID }}
         run: npm run build
     
       - name: Push
