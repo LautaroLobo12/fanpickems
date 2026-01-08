@@ -1,0 +1,1 @@
+import{h as o,w as n}from"./auth.DKlfsZXY.js";import"./firebase.7XQumvwg.js";import"./firestore.CNCkpXRh.js";o().then(i=>{i?.success&&(window.location.href="/picks")});n().then(i=>{i&&(window.location.href="/picks")});
