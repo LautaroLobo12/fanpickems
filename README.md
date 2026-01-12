@@ -2,6 +2,10 @@
 
 Web app for LCK (League of Legends Champions League) fan pickems. Built with Astro <3
 
+## Preview
+
+[Watch the demo video](https://github.com/user-attachments/assets/ef2fd1a2-2628-4404-a7b2-d69cccadc545)
+
 ## Development Process
 
 This project was developed using a combination of tools to streamline the development process.
@@ -18,7 +22,7 @@ This project was developed using a combination of tools to streamline the develo
 
 1.  Clone the repo
     ```sh
-    git clone https://github.com/your_username_/your_project_name.git
+    git clone https://github.com/LautaroLobo12/fanpickems.git
     ```
 2.  Install NPM packages
     ```sh
