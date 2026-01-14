@@ -54,7 +54,7 @@ export const getTeamsFromIds = async (teamIds: string[]) => {
 };
 
 // Validate picks against tournament rules
-export const validatePicks = (picks: UserPicks['picks'], tournament: Tournament): PickValidationResult => {
+export const validatePicks = (picks: UserPicks['picks'], tournament: Tournament, originalPicks?: UserPicks['picks']): PickValidationResult => {
   const errors: string[] = [];
 
   if (!tournament || !tournament.stages) {
@@ -84,7 +84,26 @@ export const validatePicks = (picks: UserPicks['picks'], tournament: Tournament)
     const deadline = config.deadline?.toDate ? config.deadline.toDate() : new Date((config.deadline as any).seconds * 1000);
 
     if (now > deadline) {
-      errors.push(`Deadline for ${stage} has passed (${deadline.toLocaleString()})`);
+      // Check if picks have changed for this locked stage
+      let hasChanged = true;
+
+      if (originalPicks && originalPicks[stage as keyof UserPicks['picks']]) {
+        const original = originalPicks[stage as keyof UserPicks['picks']] || [];
+        const current = stagePicks || [];
+
+        if (Array.isArray(original) && Array.isArray(current) && original.length === current.length) {
+          const sortedOriginal = [...original].sort();
+          const sortedCurrent = [...current].sort();
+          if (sortedOriginal.every((val, index) => val === sortedCurrent[index])) {
+            hasChanged = false;
+          }
+        }
+      }
+
+      // If picks changed (or no original data to verify against), enforce deadline
+      if (hasChanged) {
+        errors.push(`Deadline for ${stage} has passed (${deadline.toLocaleString()})`);
+      }
     }
 
     // Validate team IDs exist in tournament

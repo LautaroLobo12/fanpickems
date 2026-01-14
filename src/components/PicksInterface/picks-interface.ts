@@ -9,6 +9,7 @@ interface PicksState {
   teams: any[]; // Teams are now passed as any[] from data attribute
   currentUserUid: string | null; // Changed to uid only
   selectedPicks: Record<string, string[]>;
+  originalPicks: Record<string, string[]>;
 }
 
 class PicksInterface {
@@ -16,7 +17,8 @@ class PicksInterface {
     tournament: null,
     teams: [],
     currentUserUid: null,
-    selectedPicks: {}
+    selectedPicks: {},
+    originalPicks: {}
   };
 
   private elements = {
@@ -30,7 +32,10 @@ class PicksInterface {
 
     if (tournament) this.state.tournament = JSON.parse(tournament);
     if (teams) this.state.teams = JSON.parse(teams);
-    if (initialPicks) this.state.selectedPicks = JSON.parse(initialPicks);
+    if (initialPicks) {
+      this.state.selectedPicks = JSON.parse(initialPicks);
+      this.state.originalPicks = JSON.parse(initialPicks);
+    }
     if (currentUserUid !== undefined) this.state.currentUserUid = currentUserUid === 'null' ? null : currentUserUid; // Handle 'null' string
 
     this.init();
@@ -92,6 +97,7 @@ class PicksInterface {
           getUserPicksForTournament(this.state.tournament.id, user.uid).then(userPicks => {
             if (userPicks) {
               this.state.selectedPicks = userPicks.picks || {};
+              this.state.originalPicks = JSON.parse(JSON.stringify(userPicks.picks || {})); // Deep copy
               this.renderPicks();
             }
           });
@@ -258,7 +264,7 @@ class PicksInterface {
       saveBtn.textContent = 'Saving...';
 
       // Validate picks
-      const validation = validatePicks(this.state.selectedPicks, this.state.tournament);
+      const validation = validatePicks(this.state.selectedPicks, this.state.tournament, this.state.originalPicks);
       if (!validation.valid) {
         this.showSaveStatus(validation.errors.join(', '), 'error');
         return;
@@ -275,6 +281,7 @@ class PicksInterface {
       );
 
       if (result.success) {
+        this.state.originalPicks = JSON.parse(JSON.stringify(this.state.selectedPicks)); // Update original picks on successful save
         this.showSaveStatus('Picks saved successfully!', 'success');
       } else {
         this.showSaveStatus(result.error || 'Failed to save picks', 'error');
