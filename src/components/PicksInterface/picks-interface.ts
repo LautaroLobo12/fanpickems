@@ -212,11 +212,41 @@ class PicksInterface {
   private renderPicks() {
     if (!this.state.tournament) return;
 
+    const now = new Date(); // Get current time on client-side
+
     // Iterate through all stages in the UI
     const stageSections = this.elements.container.querySelectorAll('.stage-section');
     stageSections.forEach(section => {
       const stageName = (section as HTMLElement).dataset.stageName!;
       const picks = this.state.selectedPicks[stageName] || [];
+
+      // Check if deadline has passed (client-side check)
+      const stageConfig = this.state.tournament!.stages[stageName];
+      if (stageConfig) {
+        const deadline = stageConfig.deadline?.toDate
+          ? stageConfig.deadline.toDate()
+          : new Date((stageConfig.deadline as any).seconds * 1000);
+        const isDeadlinePassed = now > deadline;
+
+        // Update stage-locked class based on current time
+        if (isDeadlinePassed) {
+          section.classList.add('stage-locked');
+          // Disable the teams grid
+          const teamsGrid = section.querySelector('.teams-grid');
+          if (teamsGrid) {
+            teamsGrid.classList.add('disabled');
+          }
+        } else {
+          section.classList.remove('stage-locked');
+          // Re-enable the teams grid if user is logged in
+          if (this.state.currentUserUid) {
+            const teamsGrid = section.querySelector('.teams-grid');
+            if (teamsGrid) {
+              teamsGrid.classList.remove('disabled');
+            }
+          }
+        }
+      }
 
       // Update team cards in this stage
       const teamCards = section.querySelectorAll('.team-card');
