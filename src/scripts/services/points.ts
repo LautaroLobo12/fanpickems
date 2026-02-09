@@ -73,6 +73,19 @@ export const updateUserPoints = async (
       return { success: false, error: 'Tournament or user picks not found' };
     }
 
+    // Check if any stage has results before calculating
+    const hasResults = Object.values(tournament.stages).some(
+      stage => stage.results && stage.results.length > 0
+    );
+
+    if (!hasResults) {
+      console.log(`[Points] Skipping calculation for user ${userId}: No results available yet`);
+      return {
+        success: false,
+        error: 'No results available yet. Points calculation skipped to prevent premature flag setting.'
+      };
+    }
+
     // Calculate new points
     const newPoints = calculateUserPoints(userPicks, tournament);
 
@@ -80,7 +93,7 @@ export const updateUserPoints = async (
     const picksRef = doc(db, 'tournaments', tournamentId, 'picks', userId);
     const updateData = {
       totalPoints: newPoints,
-      pointsCalculated: true,
+      pointsCalculated: true, // Only set when results exist
       lastUpdated: serverTimestamp()
     };
 
