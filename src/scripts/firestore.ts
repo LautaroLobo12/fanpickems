@@ -1,5 +1,5 @@
 // Firestore data operations for tournament-scoped collections
-import type { LeaderboardEntry, Team, Tournament, User, UserPicks } from '@/types';
+import type { LeaderboardEntry, PublicUserProfile, Team, Tournament, User, UserPicks } from '@/types';
 import {
   collection,
   doc,
@@ -44,10 +44,10 @@ export const getUser = async (uid: string): Promise<User | null> => {
 };
 
 // New: Public User Profile Operations
-export const getPublicUserProfile = async (uid: string): Promise<{ uid: string; displayName: string; createdAt: any } | null> => {
+export const getPublicUserProfile = async (uid: string): Promise<PublicUserProfile | null> => {
   const publicUserRef = doc(db, 'publicUserProfiles', uid);
   const publicUserSnap: DocumentSnapshot<DocumentData> = await getDoc(publicUserRef);
-  return publicUserSnap.exists() ? publicUserSnap.data() as { uid: string; displayName: string; createdAt: any } : null;
+  return publicUserSnap.exists() ? publicUserSnap.data() as PublicUserProfile : null;
 };
 
 // Tournaments Collection Operations
@@ -217,4 +217,13 @@ export const getTeamsByIds = async (teamIds: string[]): Promise<Team[]> => {
   });
 
   return teams;
+};
+
+// Update user display name in both private and public profiles
+export const updateUserDisplayName = async (uid: string, newDisplayName: string): Promise<void> => {
+  const userRef = doc(db, 'users', uid);
+  const publicUserRef = doc(db, 'publicUserProfiles', uid);
+
+  await setDoc(userRef, { displayName: newDisplayName }, { merge: true });
+  await setDoc(publicUserRef, { displayName: newDisplayName }, { merge: true });
 };

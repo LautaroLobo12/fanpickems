@@ -1,0 +1,81 @@
+---
+// Home/profile page
+import Layout from '@/layouts/Layout.astro';
+import AuthGuard from '@/components/AuthGuard/AuthGuard.astro';
+import Navigation from '@/components/Navigation/Navigation.astro';
+import DisplayNameForm from '@/components/Profile/DisplayNameForm.astro';
+---
+
+<Layout title="LCK Pickems - Profile">
+  <AuthGuard>
+    <Navigation />
+    <div class="profile-page">
+      <div class="profile-container">
+        <div class="page-header">
+          <h1>Profile Settings</h1>
+          <p class="page-description">
+            Manage your account settings and preferences
+          </p>
+        </div>
+
+        <div class="card">
+          <DisplayNameForm />
+        </div>
+      </div>
+    </div>
+  </AuthGuard>
+</Layout>
+
+<style>
+  .profile-page {
+    min-height: calc(100vh - 80px);
+    background: #f8f9fa;
+  }
+
+  .profile-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  .page-header h1 {
+    color: #333;
+    margin-bottom: 0.5rem;
+    font-size: 2.5rem;
+    font-weight: 700;
+  }
+
+  .page-description {
+    color: #666;
+    font-size: 1.125rem;
+    margin: 0;
+  }
+
+  .card {
+    background: white;
+    border-radius: 0.5rem;
+    padding: 2rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  @media (max-width: 768px) {
+    .profile-container {
+      padding: 1rem;
+    }
+
+    .page-header h1 {
+      font-size: 2rem;
+    }
+
+    .card {
+      padding: 1.5rem;
+    }
+  }
+</style>
